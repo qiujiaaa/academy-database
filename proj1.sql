@@ -24,7 +24,7 @@ create table Credit_cards (
     CVV         integer not null,
     from_date   date,
     cust_id     integer not null,
-    primary key (number /*cust_id ??*/)
+    primary key (number /*cust_id ??*/),
     foreign key (cust_id) references Customers(cust_id) 
 );
 
