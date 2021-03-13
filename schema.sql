@@ -1,18 +1,18 @@
 -- add on to drop table if exist ....  cascade?
-drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_Emp, Part_time_Emp Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
+drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_Emp, Part_time_Emp, Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
 
 create table Customers (
     phone   integer,     
-    [address] text, 
+    address text, 
     cust_id integer,
-    [name]    text,
+    name    text,
     email   text,
     primary key (cust_id)
 );
 
 create table Course_packages (
     price                   integer not null,   
-    [name]                    text not null,
+    name                    text not null,
     sale_end_date           date not null,
     num_free_registrations  integer not null,
     package_id              integer,   
@@ -22,8 +22,8 @@ create table Course_packages (
 );
 
 create table Credit_cards (
-    [expiry_date] date not null,
-    [number]      integer,     
+    expiry_date date not null,
+    number      integer,     
     CVV         integer not null,
     from_date   date,
     cust_id     integer not null,
@@ -32,10 +32,10 @@ create table Credit_cards (
 );
 
 create table Buys (
-    [date]                        date,
+    date                        date,
     num_remaining_redemptions   integer not null,
     package_id                  integer,
-    [number]                      integer,
+    number                      integer,
     -- cust_id                  integer not null,
     primary key (date, package_id, number),
     foreign key (package_id) references Course_packages(package_id),
@@ -59,7 +59,7 @@ create table Employees (
     email       text,
     phone       text,
     join_date   date,
-    depart_date date,
+    depart_date date
 );
 
 create table Pay_slips (
@@ -106,15 +106,15 @@ Constraints not satisfied
 - a full time employee can either be a full_time_instructor OR Administrator OR Manager
 */
 create table Managers (
-    manager_id integer primary key references Full_time_Emp on delete cascade,
+    manager_id integer primary key references Full_time_Emp on delete cascade
 );
 
 create table Administrators (
-    admin_id integer primary key references Full_time_Emp on delete cascade, 
+    admin_id integer primary key references Full_time_Emp on delete cascade 
 );
 
 create table Course_areas (
-    [name]         text primary key,
+    name           text primary key,
     manager_id     integer not null references Managers
 );
 
@@ -131,7 +131,7 @@ create table Specializes (
 create table Courses (
     course_id      integer primary key,
     title          text not null unique,
-    [description]  text,
+    description    text,
     course_area    text not null references Course_areas,
     duration       integer
 );
@@ -148,9 +148,9 @@ create table Offerings (
     fees                          numeric,
     target_number_registrations   integer,
     registration_deadline         date,
-    [start_date]                  date,
+    start_date                    date,
     end_date                      date, 
     admin_id                      integer not null references Administrators,
     seating_capacity              integer,
-    primary key (course_id, launch_date),
+    primary key (course_id, launch_date)
 );
