@@ -1,5 +1,5 @@
 -- add on to drop table if exist ....  cascade?
-drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_Emp, Part_time_Emp, Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
+drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_instructors, Part_time_instructors, Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
 
 create table Customers (
     phone   integer,     
@@ -143,7 +143,7 @@ Constraints not satisfied
 - seating capacity must be the sum of that of its sessions
 */
 create table Offerings (
-    course_id                     integer references(Courses),
+    course_id                     integer references Courses,
     launch_date                   date,
     fees                          numeric,
     target_number_registrations   integer,
