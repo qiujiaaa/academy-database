@@ -1,6 +1,5 @@
 -- add on to drop table if exist ....  cascade?
-drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_Emp, Part_time_Emp
-cascade;
+drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_Emp, Part_time_Emp Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
 
 create table Customers (
     phone   integer,     
@@ -31,8 +30,6 @@ create table Credit_cards (
     primary key (number /*cust_id ??*/),
     foreign key (cust_id) references Customers(cust_id) 
 );
-
-
 
 create table Buys (
     [date]                        date,
@@ -102,4 +99,58 @@ create table Part_time_instructors (
     eid     integer primary key references Instructors
             references Part_time_Emp
             on delete cascade
+);
+
+/*
+Constraints not satisfied
+- a full time employee can either be a full_time_instructor OR Administrator OR Manager
+*/
+create table Managers (
+    manager_id integer primary key references Full_time_Emp on delete cascade,
+);
+
+create table Administrators (
+    admin_id integer primary key references Full_time_Emp on delete cascade, 
+);
+
+create table Course_areas (
+    [name]         text primary key,
+    manager_id     integer not null references Managers
+);
+
+/*
+Constraints not satisfied
+- Total participation constraint of Instructors with respect to Specializes
+*/
+create table Specializes (
+    instructor_id  integer references Instructors,
+    course_area    text references Course_areas,
+    primary key(instructor_id, course_area)
+);
+
+create table Courses (
+    course_id      integer primary key,
+    title          text not null unique,
+    [description]  text,
+    course_area    text not null references Course_areas,
+    duration       integer
+);
+
+/*
+Constraints not satisfied
+- start_date and end_date
+- deadline must be at least 10 days before its start date
+- seating capacity must be the sum of that of its sessions
+*/
+create table Offerings (
+    course_id                     integer references(Courses),
+    launch_date                   date,
+    fees                          numeric,
+    target_number_registrations   integer,
+    registration_deadline         date,
+    [start_date]                  date,
+    end_date                      date, 
+    admin_id                      integer not null references Administrators,
+    seating_capacity              integer,
+    primary key (course_id, launch_date),
 );
