@@ -49,3 +49,131 @@ insert into Employees (eid, name, address, email, phone, join_date, depart_date)
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (48, 'Bobette', '6614 Lerdahl Trail', 'bcelloni1b@wired.com', '1144716169', '2012-07-04 20:48:36', null);
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (49, 'Jeniffer', '87030 Lerdahl Crossing', 'jdomican1c@delicious.com', '7152598478', '2010-07-17 01:57:19', null);
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (50, 'Blakeley', '133 Walton Court', 'bsplaven1d@hubpages.com', '8532476317', '2016-12-28 16:32:12', null);
+
+--populate Pay_slips table
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (1, '2020-08-18 03:06:59', 4401, null, 21);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (2, '2020-11-24 23:21:58', 3589, null, 28);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (4, '2020-12-07 02:39:50', 4912, null, 25);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (8, '2020-03-06 01:59:18', 3015, null, 16);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (15, '2020-06-09 21:55:51', 3937, null, 23);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (18, '2020-07-19 09:56:28', 1898, null, 17);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (20, '2020-03-28 01:13:04', 3362, null, 29);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (24, '2021-03-11 21:15:55', 2537, null, 19);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (29, '2020-10-01 08:15:37', 1109, null, 10);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (31, '2020-02-03 16:22:04', 1518, 13, null);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (35, '2020-07-28 00:38:31', 3300, 30, null);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (39, '2020-06-13 21:52:03', 566, 18, null);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (40, '2020-03-07 02:14:03', 754, 13, null);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (44, '2020-09-27 01:56:00', 655, 10, null);
+insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (49, '2021-03-03 02:13:51', 1068, 29, null);
+
+--populate Full_time_Emp table
+insert into Full_time_Emp (eid, monthly_salary) values (1, 3665);
+insert into Full_time_Emp (eid, monthly_salary) values (2, 9390);
+insert into Full_time_Emp (eid, monthly_salary) values (3, 8511);
+insert into Full_time_Emp (eid, monthly_salary) values (4, 2296);
+insert into Full_time_Emp (eid, monthly_salary) values (5, 3578);
+insert into Full_time_Emp (eid, monthly_salary) values (6, 7753);
+insert into Full_time_Emp (eid, monthly_salary) values (7, 9451);
+insert into Full_time_Emp (eid, monthly_salary) values (8, 3943);
+insert into Full_time_Emp (eid, monthly_salary) values (9, 4697);
+insert into Full_time_Emp (eid, monthly_salary) values (10, 2670);
+insert into Full_time_Emp (eid, monthly_salary) values (11, 6955);
+insert into Full_time_Emp (eid, monthly_salary) values (12, 9169);
+insert into Full_time_Emp (eid, monthly_salary) values (13, 9039);
+insert into Full_time_Emp (eid, monthly_salary) values (14, 7211);
+insert into Full_time_Emp (eid, monthly_salary) values (15, 3539);
+insert into Full_time_Emp (eid, monthly_salary) values (16, 3660);
+insert into Full_time_Emp (eid, monthly_salary) values (17, 8519);
+insert into Full_time_Emp (eid, monthly_salary) values (18, 4669);
+insert into Full_time_Emp (eid, monthly_salary) values (19, 8196);
+insert into Full_time_Emp (eid, monthly_salary) values (20, 4893);
+insert into Full_time_Emp (eid, monthly_salary) values (21, 5939);
+insert into Full_time_Emp (eid, monthly_salary) values (22, 9896);
+insert into Full_time_Emp (eid, monthly_salary) values (23, 2435);
+insert into Full_time_Emp (eid, monthly_salary) values (24, 6954);
+insert into Full_time_Emp (eid, monthly_salary) values (25, 4274);
+insert into Full_time_Emp (eid, monthly_salary) values (26, 6306);
+insert into Full_time_Emp (eid, monthly_salary) values (27, 7835);
+insert into Full_time_Emp (eid, monthly_salary) values (28, 2479);
+insert into Full_time_Emp (eid, monthly_salary) values (29, 2297);
+insert into Full_time_Emp (eid, monthly_salary) values (30, 6541);
+insert into Full_time_Emp (eid, monthly_salary) values (31, 3351);
+insert into Full_time_Emp (eid, monthly_salary) values (32, 4554);
+insert into Full_time_Emp (eid, monthly_salary) values (33, 1681);
+insert into Full_time_Emp (eid, monthly_salary) values (34, 8468);
+insert into Full_time_Emp (eid, monthly_salary) values (35, 1465);
+insert into Full_time_Emp (eid, monthly_salary) values (36, 9841);
+insert into Full_time_Emp (eid, monthly_salary) values (37, 6541);
+insert into Full_time_Emp (eid, monthly_salary) values (38, 3254);
+
+--populate Part_time_Emp table
+insert into Part_time_Emp (eid, hourly_rate) values (39, 12);
+insert into Part_time_Emp (eid, hourly_rate) values (40, 16);
+insert into Part_time_Emp (eid, hourly_rate) values (41, 16);
+insert into Part_time_Emp (eid, hourly_rate) values (42, 17);
+insert into Part_time_Emp (eid, hourly_rate) values (43, 14);
+insert into Part_time_Emp (eid, hourly_rate) values (44, 12);
+insert into Part_time_Emp (eid, hourly_rate) values (45, 8);
+insert into Part_time_Emp (eid, hourly_rate) values (46, 18);
+insert into Part_time_Emp (eid, hourly_rate) values (47, 9);
+insert into Part_time_Emp (eid, hourly_rate) values (48, 9);
+insert into Part_time_Emp (eid, hourly_rate) values (49, 13);
+insert into Part_time_Emp (eid, hourly_rate) values (50, 15);
+
+--populate Instructors table
+insert into Instructors (eid) values (1);
+insert into Instructors (eid) values (2);
+insert into Instructors (eid) values (3);
+insert into Instructors (eid) values (4);
+insert into Instructors (eid) values (5);
+insert into Instructors (eid) values (6);
+insert into Instructors (eid) values (7);
+insert into Instructors (eid) values (8);
+insert into Instructors (eid) values (9);
+insert into Instructors (eid) values (10);
+insert into Instructors (eid) values (11);
+insert into Instructors (eid) values (12);
+insert into Instructors (eid) values (13);
+insert into Instructors (eid) values (39);
+insert into Instructors (eid) values (40);
+insert into Instructors (eid) values (41);
+insert into Instructors (eid) values (42);
+insert into Instructors (eid) values (43);
+insert into Instructors (eid) values (44);
+insert into Instructors (eid) values (45);
+insert into Instructors (eid) values (46);
+insert into Instructors (eid) values (47);
+insert into Instructors (eid) values (48);
+insert into Instructors (eid) values (49);
+insert into Instructors (eid) values (50);
+
+--populate Full_time_instructors table
+insert into Full_time_instructors (eid) values (1);
+insert into Full_time_instructors (eid) values (2);
+insert into Full_time_instructors (eid) values (3);
+insert into Full_time_instructors (eid) values (4);
+insert into Full_time_instructors (eid) values (5);
+insert into Full_time_instructors (eid) values (6);
+insert into Full_time_instructors (eid) values (7);
+insert into Full_time_instructors (eid) values (8);
+insert into Full_time_instructors (eid) values (9);
+insert into Full_time_instructors (eid) values (10);
+insert into Full_time_instructors (eid) values (11);
+insert into Full_time_instructors (eid) values (12);
+insert into Full_time_instructors (eid) values (13);
+
+--populate Part_time_instructors table
+insert into Part_time_instructors (eid) values (39);
+insert into Part_time_instructors (eid) values (40);
+insert into Part_time_instructors (eid) values (41);
+insert into Part_time_instructors (eid) values (42);
+insert into Part_time_instructors (eid) values (43);
+insert into Part_time_instructors (eid) values (44);
+insert into Part_time_instructors (eid) values (45);
+insert into Part_time_instructors (eid) values (46);
+insert into Part_time_instructors (eid) values (47);
+insert into Part_time_instructors (eid) values (48);
+insert into Part_time_instructors (eid) values (49);
+insert into Part_time_instructors (eid) values (50);
+
