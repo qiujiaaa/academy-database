@@ -59,7 +59,8 @@ create table Employees (
     email       text,
     phone       text,
     join_date   date,
-    depart_date date
+    depart_date date,
+    constraint depart_after_join check(join_date <  depart_date)
 );
 
 create table Pay_slips (
