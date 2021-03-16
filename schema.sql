@@ -71,8 +71,7 @@ create table Pay_slips (
     num_work_hours  integer,
     num_work_days   integer,
     primary key (eid, payment_date),
-    --31days x 24 hours = 744hours
-    constraint hours_exceed check (num_work_hours >= 0 and num_work_hours < 745,
+    constraint hours_exceed check (num_work_hours >= 0 and num_work_hours <= 30),
     constraint days_exceed check (num_work_days >= 0 and num_work_days < 32)
 );
 
