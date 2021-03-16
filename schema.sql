@@ -59,7 +59,8 @@ create table Employees (
     email       text,
     phone       text,
     join_date   date,
-    depart_date date
+    depart_date date,
+    constraint depart_after_join check(join_date <  depart_date)
 );
 
 create table Pay_slips (
@@ -69,19 +70,21 @@ create table Pay_slips (
     amount          integer,
     num_work_hours  integer,
     num_work_days   integer,
-    primary key (eid, payment_date)
+    primary key (eid, payment_date),
+    constraint hours_exceed check (num_work_hours >= 0 and num_work_hours <= 30),
+    constraint days_exceed check (num_work_days >= 0 and num_work_days < 32)
 );
 
 create table Full_time_Emp (
     eid             integer primary key references Employees
                     on delete cascade,
-    monthly_salary  integer
+    monthly_salary  integer not null
 );
 
 create table Part_time_Emp (
     eid             integer primary key references Employees
                     on delete cascade,
-    hourly_rate     integer
+    hourly_rate     integer not null
 );
 
 create table Instructors (
