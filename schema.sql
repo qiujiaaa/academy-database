@@ -144,6 +144,7 @@ Constraints not satisfied
 - start_date and end_date
 - deadline must be at least 10 days before its start date
 - seating capacity must be the sum of that of its sessions
+- deadline < start < end
 */
 create table Offerings (
     course_id                     integer references Courses,
