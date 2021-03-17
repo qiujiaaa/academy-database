@@ -254,3 +254,19 @@ insert into Specializes (eid, course_area) values (47, "AI");
 insert into Specializes (eid, course_area) values (48, "Software Engineering");
 insert into Specializes (eid, course_area) values (49, "Computer Security");
 insert into Specializes (eid, course_area) values (50, "Parallel Computing");
+
+-- populate Courses
+insert into Courses (course_id, title, description, course_area, duration) values (1, "Data Structures and Algorithms", "It continues the introduction and emphasises object-oriented programming with application to complex data structures.", "Algorithms", 100);
+insert into Courses (course_id, title, description, course_area, duration) values (2, "Introduction to Information Security", "This module serves as an introductory module on information security.", "Computer Security", 90);
+insert into Courses (course_id, title, description, course_area, duration) values (3, "Programming Methodology", "It explores two modern programming paradigms, object-oriented programming and functional programming.", "Algorithms", null);
+insert into Courses (course_id, title, description, course_area, duration) values (4, "Database Systems", "The aim of this module is to introduce the fundamental concepts and techniques necessary for the understanding and practice of design and implementation of database applications and of the management of data with relational database management systems.", "Database Systems", null);
+insert into Courses (course_id, title, description, course_area, duration) values (5, "Introduction to Computer Networks", null, "Networking", 95);
+insert into Courses (course_id, title, description, course_area, duration) values (6, "Introduction to Operating Systems", null, "Operating Systems", 100);
+insert into Courses (course_id, title, description, course_area, duration) values (7, "Software Engineering Project", null, "Software Engineering", null);
+insert into Courses (course_id, title, description, course_area, duration) values (8, "Parallel Computing", "The aim of this module is to provide an introduction to the field of parallel computing with hands-on parallel programming experience on real parallel machines.", "Parallel Computing", 120);
+insert into Courses (course_id, title, description, course_area, duration) values (9, "Operating Systems Design and Pragmatics", "This module builds upon the conceptual foundation formed and extends it to the study of real-life operating systems.", "Software Engineering", 120);
+insert into Courses (course_id, title, description, course_area, duration) values (10, "Introduction to Artificial Intelligence", "The module introduces the basic concepts in search and knowledge representation as well as to a number of sub-areas of artificial intelligence.", "AI", 100);
+insert into Courses (course_id, title, description, course_area, duration) values (11, "Machine Learning", "This module introduces basic concepts and algorithms in machine learning and neural networks.", "Machine Learning", 80);
+insert into Courses (course_id, title, description, course_area, duration) values (12, "Probability and Statistics", "Basic concepts of probability, conditional probability, independence, random variables, joint and marginal distributions, mean and variance, some common probability distributions, sampling distributions, estimation and hypothesis testing based on a normal population.", "Statistics", 85);
+insert into Courses (course_id, title, description, course_area, duration) values (13, "Calculus for Computing", "This module provides a basic foundation for calculus and its related subjects required by computing students.", "Calculus", 85);
+
