@@ -148,8 +148,8 @@ Constraints not satisfied
 create table Offerings (
     course_id                     integer references Courses,
     launch_date                   date,
-    fees                          numeric,
-    target_number_registrations   integer,
+    fees                          numeric not null,
+    target_number_registrations   integer not null,
     registration_deadline         date,
     start_date                    date,
     end_date                      date, 

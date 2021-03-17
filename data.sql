@@ -270,3 +270,23 @@ insert into Courses (course_id, title, description, course_area, duration) value
 insert into Courses (course_id, title, description, course_area, duration) values (12, "Probability and Statistics", "Basic concepts of probability, conditional probability, independence, random variables, joint and marginal distributions, mean and variance, some common probability distributions, sampling distributions, estimation and hypothesis testing based on a normal population.", "Statistics", 85);
 insert into Courses (course_id, title, description, course_area, duration) values (13, "Calculus for Computing", "This module provides a basic foundation for calculus and its related subjects required by computing students.", "Calculus", 85);
 
+-- populate Offerings
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, 2020-06-09, 500.50, 300, 2020-08-01, 2020-08-15, 2020-11-30, 14, 350);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, 2020-01-01, 500.50, 250, 2020-01-15, 2020-02-01, 2020-05-30, 14, 275);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (2, 2019-08-01, 810.99, 450, 2020-01-01, 2020-01-15, 2020-04-30, 15, 512);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, 2019-03-23, 888.10, 200, 2019-05-06, 2019-05-20, 2019-08-02, 17, 225);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, 2020-03-23, 888, 300, 2020-05-06, 2020-05-20, 2020-08-02, 17, 371);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, 2021-03-23, 920, 300, 2021-05-06, 2021-05-20, 2021-08-02, 20, 381);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (5, 2019-08-25, 802.99, 666, 2019-09-23, 2020-01-01, 2020-04-23, 21, 700);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (6, 2021-06-06, 606.00, 220, 2021-07-01, 2021-08-02, 2021-12-12, 22, 250);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (7, 2020-07-17, 127.00, 127, 2020-07-30, 2020-09-02, 2020-12-21, 22, 130);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (8, 2018-05-25, 525.55, 525, 2018-06-10, 2018-07-07, 2018-10-10, 24, 600);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (9, 2020-01-01, 825.66, 50, 2020-02-01, 2020-02-20, 2020-06-06, 25, 60);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (9, 2021-07-17, 127.00, 127, 2021-07-30, 2021-09-02, 2021-12-21, 22, 130);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (11, 2020-02-14, 1314.00, 134, 2020-03-15, 2020-04-20, 2020-06-30, 21, 150);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (13, 2020-08-14, 564.00, 213, 2020-09-15, 2020-10-20, 2021-03-30, 17, 250);
+
+
+
+
+-- sessions table need to take note of the dates and seating capacity in Offerings table
