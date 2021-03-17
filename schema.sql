@@ -109,16 +109,16 @@ Constraints not satisfied
 - a full time employee can either be a full_time_instructor OR Administrator OR Manager
 */
 create table Managers (
-    manager_id integer primary key references Full_time_Emp on delete cascade
+    eid integer primary key references Full_time_Emp on delete cascade
 );
 
 create table Administrators (
-    admin_id integer primary key references Full_time_Emp on delete cascade 
+    eid integer primary key references Full_time_Emp on delete cascade 
 );
 
 create table Course_areas (
     name           text primary key,
-    manager_id     integer not null references Managers
+    eid            integer not null references Managers
 );
 
 /*
@@ -126,9 +126,9 @@ Constraints not satisfied
 - Total participation constraint of Instructors with respect to Specializes
 */
 create table Specializes (
-    instructor_id  integer references Instructors,
+    eid            integer references Instructors,
     course_area    text references Course_areas,
-    primary key(instructor_id, course_area)
+    primary key(eid, course_area)
 );
 
 create table Courses (
@@ -153,7 +153,7 @@ create table Offerings (
     registration_deadline         date,
     start_date                    date,
     end_date                      date, 
-    admin_id                      integer not null references Administrators,
+    eid                           integer not null references Administrators,
     seating_capacity              integer,
     primary key (course_id, launch_date)
 );
