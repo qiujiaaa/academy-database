@@ -177,3 +177,31 @@ insert into Part_time_instructors (eid) values (48);
 insert into Part_time_instructors (eid) values (49);
 insert into Part_time_instructors (eid) values (50);
 
+-- populate Administrators table
+insert into Administrators (eid) values (14);
+insert into Administrators (eid) values (15);
+insert into Administrators (eid) values (16);
+insert into Administrators (eid) values (17);
+insert into Administrators (eid) values (18);
+insert into Administrators (eid) values (19);
+insert into Administrators (eid) values (20);
+insert into Administrators (eid) values (21);
+insert into Administrators (eid) values (22);
+insert into Administrators (eid) values (23);
+insert into Administrators (eid) values (24);
+insert into Administrators (eid) values (25);
+
+-- populate Managers table
+insert into Managers (eid) values (26);
+insert into Managers (eid) values (27);
+insert into Managers (eid) values (28);
+insert into Managers (eid) values (29);
+insert into Managers (eid) values (30);
+insert into Managers (eid) values (31);
+insert into Managers (eid) values (32);
+insert into Managers (eid) values (33);
+insert into Managers (eid) values (34);
+insert into Managers (eid) values (35);
+insert into Managers (eid) values (36);
+insert into Managers (eid) values (37);
+insert into Managers (eid) values (38);
