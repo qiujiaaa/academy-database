@@ -1,3 +1,91 @@
+--populate Customers table
+insert into Customers (phone, address, cust_id, name, email) values ('7095098098', '65 Fairview Parkway', 1, 'Jaymie', null);
+insert into Customers (phone, address, cust_id, name, email) values ('7198884633', '92 Briar Crest Court', 2, 'Dallas', 'dbeatens1@imageshack.us');
+insert into Customers (phone, address, cust_id, name, email) values ('6612840580', '17 Pepper Wood Junction', 3, 'Anna-maria', 'abarford2@bloglines.com');
+insert into Customers (phone, address, cust_id, name, email) values ('2035245598', '373 Anzinger Place', 4, 'Noland', 'namphlett3@wordpress.org');
+insert into Customers (phone, address, cust_id, name, email) values (null, '07356 Banding Lane', 5, 'Marie-ann', 'mstange4@noaa.gov');
+insert into Customers (phone, address, cust_id, name, email) values ('9994711549', '886 Farragut Crossing', 6, 'Putnam', 'pfowley5@mayoclinic.com');
+insert into Customers (phone, address, cust_id, name, email) values ('8106375428', '2051 Clove Place', 7, 'Merrielle', 'mpau6@rambler.ru');
+insert into Customers (phone, address, cust_id, name, email) values ('2268117881', '271 Clove Crossing', 8, 'Etty', 'egrosvener7@tumblr.com');
+insert into Customers (phone, address, cust_id, name, email) values (null, '4 Canary Hill', 9, 'Idell', 'ileith8@hexun.com');
+insert into Customers (phone, address, cust_id, name, email) values ('1965627597', '03 Montana Circle', 10, 'Keelia', 'kweiner9@mysql.com');
+insert into Customers (phone, address, cust_id, name, email) values ('9863884211', '313 Gulseth Street', 11, 'Willa', 'wgrinyakina@meetup.com');
+insert into Customers (phone, address, cust_id, name, email) values ('7977072151', '0214 Bobwhite Trail', 12, 'Chad', 'cmccroryb@ask.com');
+insert into Customers (phone, address, cust_id, name, email) values (null, '03312 Transport Road', 13, 'Duane', 'dbrainsbyc@wikimedia.org');
+insert into Customers (phone, address, cust_id, name, email) values ('6253313513', '04 Pearson Trail', 14, 'Alica', 'acrouchd@wix.com');
+insert into Customers (phone, address, cust_id, name, email) values ('1812040319', '55 Maple Wood Center', 15, 'Franky', 'fmartinote@acquirethisname.com');
+insert into Customers (phone, address, cust_id, name, email) values ('7322168950', '310 Tennyson Plaza', 16, 'Hewe', 'hspelmanf@xinhuanet.com');
+insert into Customers (phone, address, cust_id, name, email) values ('6369470528', '4 Stang Drive', 17, 'Willow', null);
+insert into Customers (phone, address, cust_id, name, email) values ('7355498293', '905 Rowland Point', 18, 'Myron', 'mverrierh@hostgator.com');
+insert into Customers (phone, address, cust_id, name, email) values ('2256194455', '9 Ludington Circle', 19, 'Elset', 'esoani@prlog.org');
+insert into Customers (phone, address, cust_id, name, email) values ('3674501285', '1 Grasskamp Junction', 20, 'Kit', 'kreekj@reverbnation.com');
+
+--populate Course_packages table
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (5, 'Artificial Intelligence', '2024-01-10', 4, 1, '2020-08-26');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (10, 'Machine Learning', '2023-02-16', 10, 2, '2018-07-28');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (16, 'Cyber Security', '2022-05-05', 12, 3, '2020-02-28');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (12, 'Software Engineering', '2023-05-07', 16, 4, '2019-03-10');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (3, 'Database', '2023-01-17', 20, 5, '2019-01-06');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (33, 'Data Structure', '2022-11-15', 7, 6, '2018-09-27');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (333, 'Algorithms', '2024-01-31', 1, 7, '2020-07-05');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (11, 'Networks', '2023-07-01', 5, 8, '2020-07-29');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (21, 'Operating Systems', '2023-10-09', 9, 9, '2021-03-18');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (43, 'Computer Graphics', '2023-06-16', 15, 10, '2020-11-28');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (76, 'Parallel Computing', '2023-03-26', 2, 11, '2019-10-16');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (30, 'Multimedia', '2023-08-10', 11, 12, '2020-02-20');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (50, 'Programming Languages', '2022-10-13', 10, 13, '2020-03-05');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (53, 'Distributed Systems', '2022-11-20', 17, 14, '2019-02-26');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (45, 'Computer Security', '2023-06-25', 15, 15, '2020-08-26');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (37, 'Computer Games', '2022-12-03', 13, 16, '2020-12-04');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (43, 'Programming Methodology', '2023-07-29', 19, 17, '2020-05-25');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (11, 'Discrete Structures', '2022-11-20', 16, 18, '2019-08-20');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (10, 'Statistics', '2024-02-27', 9, 19, '2019-04-16');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (5, 'Calculus', '2023-08-19', 2, 20, '2018-06-04');
+
+--populate Credit_cards table
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-08-10', '4175003665378449', '946', '2020-11-29', 1);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-27', '5453645393112118', '200', '2020-09-30', 2);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-06-01', '560222549646904780', '491', '2020-10-20', 3);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2022-03-03', '3533846600792838', '776', '2021-01-07', 3);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2022-01-13', '374283312104573', '760', '2020-10-15', 5);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-29', '630458284476134458', '820', '2021-01-11', 6);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-05-28', '564182540168178440', '319', '2020-12-26', 7);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-10-08', '3567052898252853', '278', '2020-08-09', 8);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-07-18', '30000532068750', '915', '2020-11-22', 9);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-11-28', '56022292947227624', '432', '2020-06-21', 10);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2022-03-15', '3531724438465020', '632', '2020-08-10', 11);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-08-03', '4041370974024', '861', '2020-10-18', 12);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-10-18', '3530018806140112', '601', '2021-02-20', 3);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-04', '5344807003529486', '628', '2020-08-08', 4);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-07-12', '5018377800024433', '889', '2020-05-25', 15);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-07-19', '6759274606121255374', '102', '2021-02-16', 16);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-06-21', '374283174987222', '776', '2020-09-19', 7);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-26', '5018681020026476334', '042', '2020-08-22', 18);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-08-23', '3542502207619705', '898', '2020-06-19', 19);
+insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-03-24', '201880497763070', '414', '2020-04-21', 20);
+
+--populate Buys table
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-24', 1, 1, '4175003665378449');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-09-14', 2, 2, '560222549646904780');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2022-01-21', 12, 3, '374283312104573');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-07-15', 3, 4, '6759274606121255374');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-02', 8, 5, '5018681020026476334');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-09-05', 17, 6, '3542502207619705');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-04', 0, 7, '374283174987222');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-06', 11, 8, '5344807003529486');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-10-21', 2, 9, '4175003665378449');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-02', 3, 10, '3531724438465020');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-25', 1, 11, '3530018806140112');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-10-27', 1, 12, '6759274606121255374');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-08-29', 7, 13, '4041370974024');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-04', 0, 14, '56022292947227624');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2022-01-01', 7, 15, '3531724438465020');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-08-31', 1, 16, '564182540168178440');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-11', 1, 17, '201880497763070');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-26', 13, 18, '564182540168178440');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-26', 16, 19, '560222549646904780');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-03-20', 4, 20, '560222549646904780');
+
 --populate Employees table
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (1, 'Galen', '429 Parkside Junction', 'gyepiskopov0@google.com.au', '2495996139', '2010-09-11', null);
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (2, 'Rubie', '1 Moulton Park', 'randersen1@unc.edu', '8269709108', '2016-03-14', null);
