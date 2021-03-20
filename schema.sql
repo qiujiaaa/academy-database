@@ -2,7 +2,7 @@
 drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_instructors, Part_time_instructors, Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
 
 create table Customers (
-    phone   integer,     
+    phone   text,     
     address text, 
     cust_id integer,
     name    text,
@@ -23,8 +23,8 @@ create table Course_packages (
 
 create table Credit_cards (
     expiry_date date not null,
-    number      integer,     
-    CVV         integer not null,
+    number      text,     
+    CVV         text not null,
     from_date   date,
     cust_id     integer not null,
     primary key (number /*cust_id ??*/),
@@ -35,7 +35,7 @@ create table Buys (
     date                        date,
     num_remaining_redemptions   integer not null,
     package_id                  integer,
-    number                      integer,
+    number                      text,
     -- cust_id                  integer not null,
     primary key (date, package_id, number),
     foreign key (package_id) references Course_packages(package_id),
