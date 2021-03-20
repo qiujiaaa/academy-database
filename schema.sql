@@ -158,3 +158,61 @@ create table Offerings (
     seating_capacity              integer,
     primary key (course_id, launch_date)
 );
+
+// below tables created via jonathan.
+
+create table Rooms (
+    rid                 integer primary key,
+    location            text,
+    seating capacity    integer
+);
+
+create table Sessions (
+    course_id       integer,
+    launch_date     integer,
+    sid             integer,
+    start_time      time,
+    end_time        time,
+    date            date,
+    primary key (sid, course_id, launch_date),
+    foreign key (course_id, launch_date) references Offerings (course_id, launch_date)
+);
+
+create table Cancels (
+    date                date,
+    refund_amt          numeric,
+    package_credit      boolean, /*whats this lmao*/
+    cust_id             integer,
+    sid                 integer,
+    course_id           integer,
+    launch_date         date,
+    primary key (cust_id, date, refund_amt, package_credit, sid, course_id, launch_date),
+    foreign key (cust_id) references Customers (cust_id),
+    foreign key (sid, course_id, launch_date) references Sessions (sid, course_id, launch_date)
+);
+
+create table Registers (
+    date            date,
+    sid             integer,
+    course_id       integer,
+    launch_date     date,
+    number          text,
+    primary key (date, sid, course_id, launch_date, number),
+    foreign key (number) references Credit_cards (number),
+    foreign key (sid, course_id, launch_date) references Sessions (sid, course_id, launch_date)
+);
+
+create table Redeems (
+    date            date,
+    package_id      integer,
+    number          text,
+    redeems_date    date,
+    sid             integer,
+    course_id       integer,
+    launch_date     date,
+    foreign key (sid, course_id, launch_date) references Sessions (sid, course_id, launch_date),
+    foreign key (date, package_id, number), references Buys (date, package_id, number),
+    primary key (date, package_id, number, redeems_date, sid, course_id, launch_date)
+);
+
+
