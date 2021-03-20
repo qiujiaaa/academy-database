@@ -376,6 +376,30 @@ insert into Offerings(course_id, launch_date, fees, target_number_registrations,
 
 
 
-
 -- sessions table need to take note of the dates and seating capacity in Offerings table
 -- do try to run in postgres before merging
+
+-- populate Rooms
+insert into Rooms(rid, location, seating_capacity) values (1, '01-01', 20);
+insert into Rooms(rid, location, seating_capacity) values (2, '01-02', 20);
+insert into Rooms(rid, location, seating_capacity) values (3, '01-03', 20);
+insert into Rooms(rid, location, seating_capacity) values (4, '01-04', 20);
+insert into Rooms(rid, location, seating_capacity) values (5, '01-05', 20);
+insert into Rooms(rid, location, seating_capacity) values (6, '01-06', 20);
+insert into Rooms(rid, location, seating_capacity) values (7, '01-07', 20);
+insert into Rooms(rid, location, seating_capacity) values (8, '01-08', 20);
+insert into Rooms(rid, location, seating_capacity) values (9, '01-09', 20);
+insert into Rooms(rid, location, seating_capacity) values (10, '01-10', 20);
+insert into Rooms(rid, location, seating_capacity) values (11, '02-01', 50);
+insert into Rooms(rid, location, seating_capacity) values (12, '02-02', 50);
+insert into Rooms(rid, location, seating_capacity) values (13, '02-03', 50);
+insert into Rooms(rid, location, seating_capacity) values (14, '02-04', 50);
+insert into Rooms(rid, location, seating_capacity) values (15, '02-05', 50);
+insert into Rooms(rid, location, seating_capacity) values (16, '03-01', 50);
+insert into Rooms(rid, location, seating_capacity) values (17, '03-02', 50);
+insert into Rooms(rid, location, seating_capacity) values (18, '03-03', 50);
+insert into Rooms(rid, location, seating_capacity) values (19, '03-04', 50);
+insert into Rooms(rid, location, seating_capacity) values (20, '03-05', 50);
+
+
+
