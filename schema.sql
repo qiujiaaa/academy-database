@@ -159,12 +159,10 @@ create table Offerings (
     primary key (course_id, launch_date)
 );
 
-// below tables created via jonathan.
-
 create table Rooms (
     rid                 integer primary key,
     location            text,
-    seating capacity    integer
+    seating_capacity    integer
 );
 
 /*
@@ -174,7 +172,7 @@ Constraints not satisfied:
 */
 create table Sessions (
     course_id       integer,
-    launch_date     integer,
+    launch_date     date,
     sid             integer,
     start_time      time,
     end_time        time,
@@ -200,7 +198,7 @@ create table Cancels (
     package_credit      boolean,
     primary key (course_id, launch_date, sid, cust_id, date),
     foreign key (cust_id) references Customers (cust_id),
-    foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
+    foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
 /*
@@ -227,7 +225,7 @@ create table Redeems (
     number          text,
     redeems_date    date,
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
-    foreign key (date, package_id, number), references Buys (date, package_id, number),
+    foreign key (date, package_id, number) references Buys (date, package_id, number),
     primary key (course_id, launch_date, sid, date, package_id, number, redeems_date)
 );
 

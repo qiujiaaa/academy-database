@@ -473,7 +473,7 @@ insert into Redeems(course_id, launch_date, sid, date, package_id, number, redee
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 1, '2021-05-26', 18, '564182540168178440', '2021-07-18');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-04-06', 8, '5344807003529486', '2021-07-18');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-04-11', 17, '201880497763070', '2021-07-19');
-insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-03-20', 20, '560222549646904780' '2021-07-18');
+insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-03-20', 20, '560222549646904780', '2021-07-18');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 1, '2021-05-24', 1, '4175003665378449', '2021-06-07');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 1, '2021-05-26', 18, '564182540168178440', '2021-06-08');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 2, '2021-04-06', 8, '5344807003529486', '2021-06-10');
