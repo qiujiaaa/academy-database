@@ -1,5 +1,5 @@
 -- add on to drop table if exist ....  cascade?
-drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_instructors, Part_time_instructors, Administrators, Managers, Course_areas, Specializes, Courses, Offerings cascade;
+drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_instructors, Part_time_instructors, Administrators, Managers, Course_areas, Specializes, Courses, Offerings, Rooms, Sessions, Redeems, Registers, Cancels, Conducts cascade;
 
 create table Customers (
     phone   text,     
