@@ -167,6 +167,11 @@ create table Rooms (
     seating capacity    integer
 );
 
+/*
+Constraints not satisfied:
+- The earliest session can start at 9am and the latest session (for each day) must end by 6pm, and no sessions are conducted between 12pm to 2pm
+- No two sessions for the same course offering can be conducted on the same day and at the same time.
+*/
 create table Sessions (
     course_id       integer,
     launch_date     integer,
@@ -174,45 +179,74 @@ create table Sessions (
     start_time      time,
     end_time        time,
     date            date,
-    primary key (sid, course_id, launch_date),
+    primary key (course_id, launch_date, sid),
     foreign key (course_id, launch_date) references Offerings (course_id, launch_date)
 );
 
+/*
+Constraints not satisfied:
+- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
+is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
+if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+*/
 create table Cancels (
-    date                date,
-    refund_amt          numeric,
-    package_credit      boolean, /*whats this lmao*/
-    cust_id             integer,
-    sid                 integer,
     course_id           integer,
     launch_date         date,
-    primary key (cust_id, date, refund_amt, package_credit, sid, course_id, launch_date),
+    sid                 integer,
+    cust_id             integer,
+    date                date,
+    refund_amt          numeric,
+    package_credit      boolean,
+    primary key (course_id, launch_date, sid, cust_id, date),
     foreign key (cust_id) references Customers (cust_id),
-    foreign key (sid, course_id, launch_date) references Sessions (sid, course_id, launch_date)
+    foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
 );
 
+/*
+Constraints not satisfied:
+- The registration deadline for a course offering must be at least 10 days before its start date.
+*/
 create table Registers (
-    date            date,
-    sid             integer,
     course_id       integer,
     launch_date     date,
+    sid             integer,
     number          text,
-    primary key (date, sid, course_id, launch_date, number),
+    date            date,
+    primary key (course_id, launch_date, sid, number, date),
     foreign key (number) references Credit_cards (number),
-    foreign key (sid, course_id, launch_date) references Sessions (sid, course_id, launch_date)
+    foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
 create table Redeems (
+    course_id       integer,
+    launch_date     date,
+    sid             integer,
     date            date,
     package_id      integer,
     number          text,
     redeems_date    date,
-    sid             integer,
+    foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
+    foreign key (date, package_id, number), references Buys (date, package_id, number),
+    primary key (course_id, launch_date, sid, date, package_id, number, redeems_date)
+);
+
+/*
+Constraints not satisfied:
+- total participation constraint of Sessions with respect to Conducts not enforced.
+- cannot check room is conducted at most one course Session at any time.
+- cannot check no two sessions for the same course offering can be conducted on the same day and at the same time
+*/
+create table Conducts (
     course_id       integer,
     launch_date     date,
-    foreign key (sid, course_id, launch_date) references Sessions (sid, course_id, launch_date),
-    foreign key (date, package_id, number), references Buys (date, package_id, number),
-    primary key (date, package_id, number, redeems_date, sid, course_id, launch_date)
+    sid             integer,
+    rid             integer,
+    eid             integer,
+    primary key (course_id, launch_date, sid),
+    foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
+    foreign key (rid) references Rooms (rid),
+    foreign key (eid) references Instructors (eid)
 );
 
 
