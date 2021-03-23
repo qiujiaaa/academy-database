@@ -216,3 +216,75 @@ BEFORE INSERT OR UPDATE
 ON Full_time_instructors FOR EACH ROW
 EXECUTE FUNCTION FT_instr_cant_be_PT_instr();
 
+--add_employee
+CREATE OR REPLACE FUNCTION 
+add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, salary INTEGER, join_date date, emp_cat TEXT, course_area TEXT[])
+RETURNS VOID AS $$
+DECLARE 
+    eid INTEGER;
+    c_area TEXT;
+BEGIN
+    SELECT COUNT(*) FROM Employees INTO eid;
+    eid := eid + 1;
+    --Administrator
+    IF emp_cat = 'administrator' THEN
+        IF full_part = 'full' THEN
+            IF course_area IS NOT NULL THEN
+                RAISE NOTICE 'Administrator should not have course areas';
+            ELSE 
+                INSERT INTO Employees(eid, name, address, email, phone, join_date, depart_date) values (eid, name, address, email, phone, join_date, null);
+                INSERT INTO Full_time_Emp (eid, monthly_salary) values (eid, salary);
+                INSERT INTO Administrators(eid) values (eid);
+            END IF;
+        ELSE
+            RAISE NOTICE 'Administrator should be a full-time employee';
+        END IF;
+    --Manager
+    ELSIF emp_cat = 'manager' THEN
+        IF full_part = 'full' THEN
+            IF course_area IS NULL THEN
+                RAISE NOTICE 'Manager should manage some course area';
+            ELSE
+                INSERT INTO Employees (eid, name, address, email, phone, join_date, depart_date) values (eid, name, address, email, phone, join_date, null);
+                INSERT INTO Full_time_Emp (eid, monthly_salary) values (eid, salary);
+                INSERT INTO Managers (eid) values (eid);
+                
+                --Insert set of course area into Course_areas
+                FOREACH c_area in array course_area LOOP
+                    INSERT INTO Course_areas(name, eid) values (c_area, eid);
+                END LOOP;
+                
+            END IF;
+        ELSE
+            RAISE NOTICE 'Manager should be a full-time employee';
+        END IF;
+    --Instructor
+    ELSIF emp_cat = 'instructor' THEN
+        IF course_area IS NULL THEN
+            RAISE NOTICE 'Instructor should have specialization areas';
+        ELSE
+            IF full_part = 'full' OR full_part = 'part' THEN
+                INSERT INTO Employees (eid, name, address, email, phone, join_date, depart_date) values (eid, name, address, email, phone, join_date, null);
+                INSERT INTO Instructors (eid) values (eid);
+                
+                IF full_part = 'full' THEN
+                    INSERT INTO Full_time_Emp (eid, monthly_salary) values (eid, salary);
+                    INSERT INTO Full_time_instructors (eid) values (eid);
+                ELSE 
+                    INSERT INTO Part_time_Emp (eid, hourly_rate) values (eid, salary);
+                    INSERT INTO Part_time_instructors (eid) values (eid);
+                END IF;
+                
+                --Insert set of course area into Specializes
+                FOREACH c_area in array course_area LOOP
+                    INSERT INTO Specializes (eid, course_area) values (eid, c_area);
+                END LOOP;
+                
+            END IF;
+        END IF;
+    ELSE 
+        RAISE NOTICE 'Employee should be either manager, administrator or instructor';
+    END IF;
+    
+END;
+$$ LANGUAGE plpgsql;
