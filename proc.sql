@@ -17,9 +17,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS admin_cant_be_mngr ON Administrators;
 CREATE TRIGGER admin_cant_be_mngr
-BEFORE INSERT OR UPDATE 
-ON Administrators FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Administrators FOR EACH ROW
 EXECUTE FUNCTION admin_cant_be_mngr();
 
 CREATE OR REPLACE FUNCTION admin_cant_be_instr()
@@ -38,9 +38,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS admin_cant_be_instr ON Administrators;
 CREATE TRIGGER admin_cant_be_instr
-BEFORE INSERT OR UPDATE 
-ON Administrators FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Administrators FOR EACH ROW
 EXECUTE FUNCTION admin_cant_be_instr();
 
 --Instructor
@@ -60,9 +60,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS instr_cant_be_mngr ON Instructors;
 CREATE TRIGGER instr_cant_be_mngr
-BEFORE INSERT OR UPDATE 
-ON Instructors FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Instructors FOR EACH ROW
 EXECUTE FUNCTION instr_cant_be_mngr();
 
 CREATE OR REPLACE FUNCTION instr_cant_be_admin()
@@ -81,9 +81,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS instr_cant_be_admin ON Instructors;
 CREATE TRIGGER instr_cant_be_admin
-BEFORE INSERT OR UPDATE 
-ON Instructors FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Instructors FOR EACH ROW
 EXECUTE FUNCTION instr_cant_be_admin();
 
 --Manager
@@ -103,9 +103,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS mngr_cant_be_admin ON Managers;
 CREATE TRIGGER mngr_cant_be_admin
-BEFORE INSERT OR UPDATE 
-ON Managers FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Managers FOR EACH ROW
 EXECUTE FUNCTION mngr_cant_be_admin();
 
 CREATE OR REPLACE FUNCTION mngr_cant_be_instr()
@@ -124,9 +124,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS mngr_cant_be_instr ON Managers;
 CREATE TRIGGER mngr_cant_be_instr
-BEFORE INSERT OR UPDATE 
-ON Managers FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Managers FOR EACH ROW
 EXECUTE FUNCTION mngr_cant_be_instr();
 
 --Employee is either Full-time Emp or Part-time Emp
@@ -146,9 +146,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS PT_emp_cant_be_FT_emp ON Part_time_Emp;
 CREATE TRIGGER PT_emp_cant_be_FT_emp
-BEFORE INSERT OR UPDATE 
-ON Part_time_Emp FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Part_time_Emp FOR EACH ROW
 EXECUTE FUNCTION PT_emp_cant_be_FT_emp();
 
 CREATE OR REPLACE FUNCTION FT_emp_cant_be_PT_emp()
@@ -167,9 +167,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS FT_emp_cant_be_PT_emp ON Full_time_Emp;
 CREATE TRIGGER FT_emp_cant_be_PT_emp
-BEFORE INSERT OR UPDATE 
-ON Full_time_Emp FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Full_time_Emp FOR EACH ROW
 EXECUTE FUNCTION FT_emp_cant_be_PT_emp();
 
 
@@ -190,9 +190,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS PT_instr_cant_be_FT_instr ON Part_time_instructors;
 CREATE TRIGGER PT_instr_cant_be_FT_instr
-BEFORE INSERT OR UPDATE 
-ON Part_time_instructors FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Part_time_instructors FOR EACH ROW
 EXECUTE FUNCTION PT_instr_cant_be_FT_instr();
 
 CREATE OR REPLACE FUNCTION FT_instr_cant_be_PT_instr()
@@ -211,14 +211,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS FT_instr_cant_be_PT_instr ON Full_time_instructors;
 CREATE TRIGGER FT_instr_cant_be_PT_instr
-BEFORE INSERT OR UPDATE 
-ON Full_time_instructors FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Full_time_instructors FOR EACH ROW
 EXECUTE FUNCTION FT_instr_cant_be_PT_instr();
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
-add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, salary INTEGER, join_date date, emp_cat TEXT, course_area TEXT[])
+add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, salary INTEGER, join_date DATE, emp_cat TEXT, course_area TEXT[])
 RETURNS VOID AS $$
 DECLARE 
     eid INTEGER;
