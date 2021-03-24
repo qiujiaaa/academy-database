@@ -281,7 +281,7 @@ CREATE TRIGGER offering_start_end_date
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
-/* ---------------------- functionalities ----------------------*/
+/* ------------------------------- functionalities -------------------------------*/
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
@@ -429,3 +429,50 @@ BEGIN
     
 END;
 $$ LANGUAGE plpgsql;
+
+--add_customer
+
+
+--update_credit_card
+
+
+--add_course
+CREATE OR REPLACE FUNCTION
+add_course(newTitle TEXT, newDescription TEXT, newArea TEXT, newDuration INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    course_id INTEGER;
+    title_exists INTEGER;
+    course_area_exists INTEGER;
+BEGIN 
+    SELECT COUNT(*) INTO course_id FROM Courses;
+    course_id := course_id + 1;
+    SELECT COUNT(*) INTO course_area_exists FROM Course_areas WHERE name = newArea;
+    SELECT COUNT(*) INTO title_exists FROM Courses WHERE title = newTitle;
+    IF newTitle IS NULL THEN
+        RAISE EXCEPTION 'Title of Course cannot be null';
+    ELSIF newArea IS NULL THEN  
+        RAISE EXCEPTION 'Course area cannot be null';
+    ELSIF course_area_exists = 0 THEN
+        RAISE EXCEPTION 'Course area does not exist';
+    ELSIF title_exists = 1 THEN
+        RAISE EXCEPTION 'There exists an existing Course with the same title';
+    END IF;
+    INSERT INTO Courses (course_id, title, description, course_area, duration) values (course_id, newTitle, newDescription, newArea, newDuration);
+END;
+$$ LANGUAGE plpgsql;
+
+--find_instructors
+CREATE OR REPLACE FUNCTION
+find_instructors(IN cid INTEGER, IN sessionDate DATE, IN sessionStartHour TIME, OUT eid INTEGER, OUT name TEXT)
+RETURNS SETOF RECORD AS $$
+    SELECT DISTINCT eid, name 
+    FROM (Employees natural join Specializes) natural join Courses 
+    WHERE course_id = cid
+    EXCEPT
+    SELECT DISTINCT eid, name
+    FROM (Employees natural join Conducts) natural join Sessions
+    WHERE date = sessionDate AND 
+    ((start_time >= (sessionStartHour - interval '1 hour') AND start_time < (sessionStartHour + interval '2 hours')) OR
+    (end_time > (sessionStartHour - interval '1 hour') AND end_time <= (sessionStartHour + interval '2 hours')));
+$$ LANGUAGE sql;
