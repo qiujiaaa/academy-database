@@ -288,3 +288,72 @@ BEGIN
     
 END;
 $$ LANGUAGE plpgsql;
+
+--remove employee
+CREATE OR REPLACE FUNCTION remove_employee(eid INTEGER, depart_date DATE)
+RETURNS VOID AS $$
+DECLARE
+    admin_count INTEGER;
+    instr_count INTEGER;
+    mngr_count INTEGER;
+    cnt INTEGER;
+    
+    off_curs CURSOR FOR (SELECT * FROM Offerings WHERE Offerings.eid = eid);
+    cnd_curs CURSOR FOR (SELECT * FROM Conducts WHERE Conducts.eid = eid);
+    r RECORD;
+    
+BEGIN
+    SELECT COUNT(*) FROM Adminstrators WHERE Adminstrators.eid = eid INTO admin_count;
+    SELECT COUNT(*) FROM Instructors WHERE Instructors.eid = eid INTO instr_count;
+    SELECT COUNT(*) FROM Managers WHERE Managers.eid = eid INTO mngr_count;
+    
+    --admin
+    IF admin_count > 0 THEN
+        SELECT COUNT(*) FROM Offerings WHERE Offerings.eid = eid INTO cnt;
+        IF cnt > 0 THEN
+            LOOP
+                FETCH off_curs INTO r;
+                EXIT WHEN NOT FOUND;
+                IF r.end_date > depart_date THEN
+                    RAISE NOTICE 'Administrator is still handling some course offering';
+                    RETURN; --Is this correct?
+                END IF;
+                
+                UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+                
+            END LOOP;
+        ELSE 
+            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+        END IF;
+    --instr
+    ELSIF instr_count > 0 THEN
+        SELECT COUNT(*) FROM Conducts WHERE Conducts.eid = eid INTO cnt;
+        IF cnt > 0 THEN
+            LOOP 
+                FETCH cnd_curs INTO r;
+                EXIT WHEN NOT FOUND;
+                IF r.launch_date > depart_date THEN
+                    RAISE NOTICE 'Instructor is teaching some course that starts after depart date';
+                    RETURN;
+                END IF;
+            END LOOP;
+            
+            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+        
+        ELSE 
+            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+        END IF;    
+    --mngr
+    ELSIF mngr_count > 0 THEN
+        SELECT COUNT(*) FROM Course_areas WHERE Course_areas.eid = eid INTO cnt;
+        IF cnt > 0 THEN
+            RAISE NOTICE 'Manager is still managing some area';
+        ELSE 
+            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+        END IF;
+    ELSE
+        RAISE NOTICE 'eid does not exists';
+    END IF;
+    
+END;
+$$ LANGUAGE plpgsql;
