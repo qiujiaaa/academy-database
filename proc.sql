@@ -216,6 +216,73 @@ CREATE TRIGGER FT_instr_cant_be_PT_instr
 BEFORE INSERT OR UPDATE ON Full_time_instructors FOR EACH ROW
 EXECUTE FUNCTION FT_instr_cant_be_PT_instr();
 
+-- Course Offering's start-date must be at least 10 days after deadline
+CREATE OR REPLACE FUNCTION offering_start_after_deadline()
+RETURNS TRIGGER AS $$
+DECLARE 
+    diff INTEGER;
+BEGIN
+    SELECT NEW.start_date::date - NEW.registration_deadline::date INTO diff;
+    IF diff < 10 THEN
+        RAISE NOTICE 'Start date of Course Offering must be at least 10 days after the deadline';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS offering_start_after_deadline ON Offerings;
+CREATE TRIGGER offering_start_after_deadline
+BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
+EXECUTE FUNCTION offering_start_after_deadline();
+
+-- Course Offering's seating capacity = sum of all sessions
+CREATE OR REPLACE FUNCTION offering_capacing_sum_sessions()
+RETURNS TRIGGER AS $$
+DECLARE
+    total INTEGER;
+BEGIN   
+    SELECT sum(seating_capacity) INTO total 
+    FROM Rooms natural join Conducts 
+    WHERE course_id = NEW.course_id and launch_date = NEW.launch_date;
+    IF total <> NEW.seating_capacity THEN
+        RAISE NOTICE 'The seating capacity of a Course Offering must be the sum of the capacity of all its sessions';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS offering_capacing_sum_sessions ON Offerings;
+CREATE TRIGGER offering_capacing_sum_sessions
+BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
+EXECUTE FUNCTION offering_capacing_sum_sessions();
+
+-- Course Offering's start_date and end_date must correspond to the first and last session
+CREATE OR REPLACE FUNCTION offering_start_end_date()
+RETURNS TRIGGER AS $$
+DECLARE
+    earliest DATE;
+    latest DATE;
+BEGIN   
+    SELECT min(date), max(date) into earliest, latest
+    FROM Sessions
+    WHERE course_id = NEW.course_id and launch_date = NEW.launch_date;
+    IF NEW.start_date <> earliest OR NEW.end_date <> latest THEN
+        RAISE NOTICE 'The start and end date of Course Offering must correspond to its earliest and latest session';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS offering_start_end_date ON Offerings;
+CREATE TRIGGER offering_start_end_date
+BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
+EXECUTE FUNCTION offering_start_end_date();
+
+/* ---------------------- functionalities ----------------------*/
+
 --add_employee
 CREATE OR REPLACE FUNCTION 
 add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, emp_cat TEXT, salary INTEGER, join_date DATE,  course_area TEXT[])

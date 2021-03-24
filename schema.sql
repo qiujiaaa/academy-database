@@ -141,10 +141,9 @@ create table Courses (
 
 /*
 Constraints not satisfied
-- start_date and end_date
 - deadline must be at least 10 days before its start date
 - seating capacity must be the sum of that of its sessions
-- deadline < start < end
+- start_date and end_date
 */
 create table Offerings (
     course_id                     integer references Courses,
@@ -156,7 +155,11 @@ create table Offerings (
     end_date                      date, 
     eid                           integer not null references Administrators,
     seating_capacity              integer,
-    primary key (course_id, launch_date)
+    primary key (course_id, launch_date),
+    constraint deadline_before_start check(registration_deadline <  start_date),
+    constraint start_before_end check(start_date <=  end_date),
+    constraint fees_positive check(fees >= 0),
+    constraint target_number_registrations_positive check(target_number_registrations >= 0)
 );
 
 create table Rooms (
