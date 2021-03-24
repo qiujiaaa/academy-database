@@ -341,7 +341,7 @@ insert into Specializes (eid, course_area) values (47, 'Parallel Computing');
 insert into Specializes (eid, course_area) values (47, 'AI');
 insert into Specializes (eid, course_area) values (48, 'Software Engineering');
 insert into Specializes (eid, course_area) values (49, 'Computer Security');
-insert into Specializes (eid, course_area) values (50, 'Parallel Computing');
+insert into Specializes (eid, course_area) values (50, 'Operating Systems');
 
 -- populate Courses
 insert into Courses (course_id, title, description, course_area, duration) values (1, 'Data Structures and Algorithms', 'It continues the introduction and emphasises object-oriented programming with application to complex data structures.', 'Algorithms', 100);
@@ -359,25 +359,20 @@ insert into Courses (course_id, title, description, course_area, duration) value
 insert into Courses (course_id, title, description, course_area, duration) values (13, 'Calculus for Computing', 'This module provides a basic foundation for calculus and its related subjects required by computing students.', 'Calculus', 85);
 
 -- populate Offerings
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, '2020-06-09', 500.50, 300, '2020-08-01', '2020-08-15', '2020-11-30', 14, 350);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, '2020-01-01', 500.50, 250, '2020-01-15', '2020-02-01', '2020-05-30', 14, 275);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (2, '2019-08-01', 810.99, 450, '2020-01-01', '2020-01-15', '2020-04-30', 15, 512);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, '2019-03-23', 888.10, 200, '2019-05-06', '2019-05-20', '2019-08-02', 17, 200);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, '2020-06-09', 500.50, 90, '2020-08-01', '2020-08-15', '2020-11-30', 14, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, '2020-01-01', 500.50, 90, '2020-01-15', '2020-02-01', '2020-05-30', 14, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (2, '2019-08-01', 810.99, 190, '2020-01-01', '2020-01-15', '2020-04-30', 15, 200);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, '2019-03-23', 888.10, 80, '2019-05-06', '2019-05-20', '2019-08-02', 17, 100);
 --insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, '2020-03-23', 888, 300, '2020-05-06', '2020-05-20', '2020-08-02', 17, 371);
 --insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (4, '2021-03-23', 920, 300, '2021-05-06', '2021-05-20', '2021-08-02', 20, 381);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (5, '2019-08-25', 802.99, 666, '2019-09-23', '2020-01-01', '2020-04-23', 21, 100);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (6, '2021-06-06', 606.00, 220, '2021-07-01', '2021-08-02', '2021-12-12', 22, 100);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (7, '2020-07-17', 127.00, 127, '2020-07-30', '2020-09-02', '2020-12-21', 22, 100);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (8, '2018-05-25', 525.55, 525, '2018-06-10', '2018-07-07', '2018-10-10', 24, 200);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (9, '2020-01-01', 825.66, 50, '2020-02-01', '2020-02-20', '2020-06-06', 25, 100);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (9, '2021-07-17', 127.00, 127, '2021-07-30', '2021-09-02', '2021-12-21', 22, 100);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (11, '2023-02-14', 1314.00, 134, '2023-03-15', '2023-04-20', '2023-06-30', 21, 200);
-insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (13, '2020-08-14', 564.00, 213, '2020-09-15', '2020-10-20', '2021-03-30', 17, 200);
-
-
-
--- sessions table need to take note of the dates and seating capacity in Offerings table
--- do try to run in postgres before merging
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (5, '2019-08-25', 802.99, 90, '2019-09-23', '2020-01-01', '2020-04-23', 21, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (6, '2021-06-06', 606.00, 90, '2021-07-01', '2021-08-02', '2021-12-12', 22, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (7, '2020-07-17', 127.00, 95, '2020-07-30', '2020-09-02', '2020-12-21', 22, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (8, '2018-05-25', 525.55, 150, '2018-06-10', '2018-07-07', '2018-10-10', 24, 200);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (9, '2020-01-01', 825.66, 80, '2020-02-01', '2020-02-20', '2020-06-06', 25, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (9, '2021-07-17', 127.00, 90, '2021-07-30', '2021-09-02', '2021-12-21', 22, 100);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (11, '2023-02-14', 1314.00, 180, '2023-03-15', '2023-04-20', '2023-06-30', 21, 200);
+insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (13, '2020-08-14', 564.00, 190, '2020-09-15', '2020-10-20', '2021-03-30', 17, 200);
 
 -- populate Rooms
 insert into Rooms(rid, location, seating_capacity) values (1, '01-01', 50);
@@ -428,30 +423,30 @@ insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) va
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (13, '2020-08-14', 2, '14:00', '18:00', '2021-03-30');
 
 --populate Conducts
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-06-09', 1, 1, 1);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-06-09', 2, 1, 1);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-01-01', 1, 3, 7);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-01-01', 2, 3, 7);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (2, '2019-08-01', 1, 11, 2);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (2, '2019-08-01', 2, 11, 2);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (4, '2019-03-23', 1, 9, 49);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (4, '2019-03-23', 2, 9, 49);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (5, '2019-08-25', 1, 6, 47);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (5, '2019-08-25', 2, 6, 47);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (6, '2021-06-06', 1, 7, 11);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (6, '2021-06-06', 2, 7, 11);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (7, '2020-07-17', 1, 8, 5);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (7, '2020-07-17', 2, 8, 5);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (8, '2018-05-25', 1, 19, 4);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (8, '2018-05-25', 2, 19, 4);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2020-01-01', 1, 5, 40);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2020-01-01', 2, 5, 40);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2021-07-17', 1, 7, 6);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2021-07-17', 2, 7, 6);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (11, '2023-02-14', 1, 13, 9);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (11, '2023-02-14', 2, 13, 9);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (13, '2020-08-14', 1, 20, 45);
-insert into Conducts(course_id, launch_date, sid, rid, eid) values (13, '2020-08-14', 2, 20, 45);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-06-09', 1, 1, 2);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-06-09', 2, 1, 5);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-01-01', 1, 3, 13);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-01-01', 2, 3, 13);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (2, '2019-08-01', 1, 11, 43);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (2, '2019-08-01', 2, 11, 44);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (4, '2019-03-23', 1, 9, 1);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (4, '2019-03-23', 2, 9, 4);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (5, '2019-08-25', 1, 6, 8);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (5, '2019-08-25', 2, 6, 5);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (6, '2021-06-06', 1, 7, 50);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (6, '2021-06-06', 2, 7, 50);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (7, '2020-07-17', 1, 8, 41);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (7, '2020-07-17', 2, 8, 48);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (8, '2018-05-25', 1, 19, 39);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (8, '2018-05-25', 2, 19, 41);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2020-01-01', 1, 5, 48);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2020-01-01', 2, 5, 48);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2021-07-17', 1, 7, 41);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (9, '2021-07-17', 2, 7, 41);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (11, '2023-02-14', 1, 13, 10);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (11, '2023-02-14', 2, 13, 10);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (13, '2020-08-14', 1, 20, 46);
+insert into Conducts(course_id, launch_date, sid, rid, eid) values (13, '2020-08-14', 2, 20, 40);
 
 --populate Registers
 insert into Registers(course_id, launch_date, sid, number, date) values (1, '2020-06-09', 1, '4175003665378449', '2020-08-01');
