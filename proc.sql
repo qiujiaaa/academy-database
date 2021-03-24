@@ -218,7 +218,7 @@ EXECUTE FUNCTION FT_instr_cant_be_PT_instr();
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
-add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, salary INTEGER, join_date DATE, emp_cat TEXT, course_area TEXT[])
+add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, emp_cat TEXT, salary INTEGER, join_date DATE,  course_area TEXT[])
 RETURNS VOID AS $$
 DECLARE 
     eid INTEGER;
@@ -230,20 +230,20 @@ BEGIN
     IF emp_cat = 'administrator' THEN
         IF full_part = 'full' THEN
             IF course_area IS NOT NULL THEN
-                RAISE NOTICE 'Administrator should not have course areas';
+                RAISE EXCEPTION 'Administrator should not have course areas';
             ELSE 
                 INSERT INTO Employees(eid, name, address, email, phone, join_date, depart_date) values (eid, name, address, email, phone, join_date, null);
                 INSERT INTO Full_time_Emp (eid, monthly_salary) values (eid, salary);
                 INSERT INTO Administrators(eid) values (eid);
             END IF;
         ELSE
-            RAISE NOTICE 'Administrator should be a full-time employee';
+            RAISE EXCEPTION 'Administrator should be a full-time employee';
         END IF;
     --Manager
     ELSIF emp_cat = 'manager' THEN
         IF full_part = 'full' THEN
             IF course_area IS NULL THEN
-                RAISE NOTICE 'Manager should manage some course area';
+                RAISE EXCEPTION 'Manager should manage some course area';
             ELSE
                 INSERT INTO Employees (eid, name, address, email, phone, join_date, depart_date) values (eid, name, address, email, phone, join_date, null);
                 INSERT INTO Full_time_Emp (eid, monthly_salary) values (eid, salary);
@@ -256,12 +256,12 @@ BEGIN
                 
             END IF;
         ELSE
-            RAISE NOTICE 'Manager should be a full-time employee';
+            RAISE EXCEPTION 'Manager should be a full-time employee';
         END IF;
     --Instructor
     ELSIF emp_cat = 'instructor' THEN
         IF course_area IS NULL THEN
-            RAISE NOTICE 'Instructor should have specialization areas';
+            RAISE EXCEPTION 'Instructor should have specialization areas';
         ELSE
             IF full_part = 'full' OR full_part = 'part' THEN
                 INSERT INTO Employees (eid, name, address, email, phone, join_date, depart_date) values (eid, name, address, email, phone, join_date, null);
@@ -270,7 +270,7 @@ BEGIN
                 IF full_part = 'full' THEN
                     INSERT INTO Full_time_Emp (eid, monthly_salary) values (eid, salary);
                     INSERT INTO Full_time_instructors (eid) values (eid);
-                ELSE 
+                ELSE
                     INSERT INTO Part_time_Emp (eid, hourly_rate) values (eid, salary);
                     INSERT INTO Part_time_instructors (eid) values (eid);
                 END IF;
@@ -279,18 +279,19 @@ BEGIN
                 FOREACH c_area in array course_area LOOP
                     INSERT INTO Specializes (eid, course_area) values (eid, c_area);
                 END LOOP;
-                
+            ELSE
+                RAISE EXCEPTION 'Instructor should be full-time or part-time';    
             END IF;
         END IF;
     ELSE 
-        RAISE NOTICE 'Employee should be either manager, administrator or instructor';
+        RAISE EXCEPTION 'Employee should be either manager, administrator or instructor';
     END IF;
     
 END;
 $$ LANGUAGE plpgsql;
 
 --remove employee
-CREATE OR REPLACE FUNCTION remove_employee(eid INTEGER, depart_date DATE)
+CREATE OR REPLACE FUNCTION remove_employee(id INTEGER, d_date DATE)
 RETURNS VOID AS $$
 DECLARE
     admin_count INTEGER;
@@ -298,61 +299,65 @@ DECLARE
     mngr_count INTEGER;
     cnt INTEGER;
     
-    off_curs CURSOR FOR (SELECT * FROM Offerings WHERE Offerings.eid = eid);
-    cnd_curs CURSOR FOR (SELECT * FROM Conducts WHERE Conducts.eid = eid);
+    off_curs CURSOR FOR (SELECT * FROM Offerings WHERE Offerings.eid = id);
+    cnd_curs CURSOR FOR (SELECT * FROM Conducts WHERE Conducts.eid = id);
     r RECORD;
     
 BEGIN
-    SELECT COUNT(*) FROM Adminstrators WHERE Adminstrators.eid = eid INTO admin_count;
-    SELECT COUNT(*) FROM Instructors WHERE Instructors.eid = eid INTO instr_count;
-    SELECT COUNT(*) FROM Managers WHERE Managers.eid = eid INTO mngr_count;
+    SELECT COUNT(*) FROM Administrators WHERE Administrators.eid = id INTO admin_count;
+    SELECT COUNT(*) FROM Instructors WHERE Instructors.eid = id INTO instr_count;
+    SELECT COUNT(*) FROM Managers WHERE Managers.eid = id INTO mngr_count;
     
     --admin
     IF admin_count > 0 THEN
-        SELECT COUNT(*) FROM Offerings WHERE Offerings.eid = eid INTO cnt;
+        SELECT COUNT(*) FROM Offerings WHERE Offerings.eid = id INTO cnt;
         IF cnt > 0 THEN
+            OPEN off_curs;
             LOOP
                 FETCH off_curs INTO r;
                 EXIT WHEN NOT FOUND;
-                IF r.end_date > depart_date THEN
-                    RAISE NOTICE 'Administrator is still handling some course offering';
+                IF r.registration_deadline > d_date THEN
+                    RAISE EXCEPTION 'Administrator is still handling some course offering';
                     RETURN; --Is this correct?
                 END IF;
                 
-                UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+                UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
                 
             END LOOP;
+            CLOSE off_curs;
         ELSE 
-            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+            UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
         END IF;
     --instr
     ELSIF instr_count > 0 THEN
-        SELECT COUNT(*) FROM Conducts WHERE Conducts.eid = eid INTO cnt;
+        SELECT COUNT(*) FROM Conducts WHERE Conducts.eid = id INTO cnt;
         IF cnt > 0 THEN
+            OPEN cnd_curs;
             LOOP 
                 FETCH cnd_curs INTO r;
                 EXIT WHEN NOT FOUND;
-                IF r.launch_date > depart_date THEN
-                    RAISE NOTICE 'Instructor is teaching some course that starts after depart date';
+                IF r.launch_date > d_date THEN
+                    RAISE EXCEPTION 'Instructor is teaching some course that starts after depart date';
                     RETURN;
                 END IF;
             END LOOP;
-            
-            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+            CLOSE cnd_curs;
+
+            UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
         
         ELSE 
-            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+            UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
         END IF;    
     --mngr
     ELSIF mngr_count > 0 THEN
-        SELECT COUNT(*) FROM Course_areas WHERE Course_areas.eid = eid INTO cnt;
+        SELECT COUNT(*) FROM Course_areas WHERE Course_areas.eid = id INTO cnt;
         IF cnt > 0 THEN
-            RAISE NOTICE 'Manager is still managing some area';
+            RAISE EXCEPTION 'Manager is still managing some area';
         ELSE 
-            UPDATE Employees SET Employees.depart_date = depart_date WHERE Employees.eid = eid;
+            UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
         END IF;
     ELSE
-        RAISE NOTICE 'eid does not exists';
+        RAISE EXCEPTION 'eid does not exists';
     END IF;
     
 END;
