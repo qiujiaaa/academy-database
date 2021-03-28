@@ -43,26 +43,50 @@ insert into Course_packages (price, name, sale_end_date, num_free_registrations,
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (5, 'Calculus', '2023-08-19', 2, 20, '2018-06-04');
 
 --populate Credit_cards table
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-08-10', '4175003665378449', '946', '2020-11-29', 1);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-27', '5453645393112118', '200', '2020-09-30', 2);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-06-01', '560222549646904780', '491', '2020-10-20', 3);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2022-03-03', '3533846600792838', '776', '2021-01-07', 3);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2022-01-13', '374283312104573', '760', '2020-10-15', 5);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-29', '630458284476134458', '820', '2021-01-11', 6);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-05-28', '564182540168178440', '319', '2020-12-26', 7);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-10-08', '3567052898252853', '278', '2020-08-09', 8);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-07-18', '30000532068750', '915', '2020-11-22', 9);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-11-28', '56022292947227624', '432', '2020-06-21', 10);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2022-03-15', '3531724438465020', '632', '2020-08-10', 11);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-08-03', '4041370974024', '861', '2020-10-18', 12);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-10-18', '3530018806140112', '601', '2021-02-20', 3);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-04', '5344807003529486', '628', '2020-08-08', 4);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-07-12', '5018377800024433', '889', '2020-05-25', 15);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-07-19', '6759274606121255374', '102', '2021-02-16', 16);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-06-21', '374283174987222', '776', '2020-09-19', 7);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-12-26', '5018681020026476334', '042', '2020-08-22', 18);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-08-23', '3542502207619705', '898', '2020-06-19', 19);
-insert into Credit_cards (expiry_date, number, CVV, from_date, cust_id) values ('2021-03-24', '201880497763070', '414', '2020-04-21', 20);
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-08-10', '4175003665378449', '946');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-12-27', '5453645393112118', '200');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-06-01', '560222549646904780', '491');
+insert into Credit_cards (expiry_date, number, CVV) values ('2022-03-03', '3533846600792838', '776');
+insert into Credit_cards (expiry_date, number, CVV) values ('2022-01-13', '374283312104573', '760');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-12-29', '630458284476134458', '820');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-05-28', '564182540168178440', '319');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-10-08', '3567052898252853', '278');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-07-18', '30000532068750', '915');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-11-28', '56022292947227624', '432');
+insert into Credit_cards (expiry_date, number, CVV) values ('2022-03-15', '3531724438465020', '632');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-08-03', '4041370974024', '861');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-10-18', '3530018806140112', '601');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-12-04', '5344807003529486', '628');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-07-12', '5018377800024433', '889');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-07-19', '6759274606121255374', '102');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-06-21', '374283174987222', '776');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-12-26', '5018681020026476334', '042');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-08-23', '3542502207619705', '898');
+insert into Credit_cards (expiry_date, number, CVV) values ('2021-03-24', '201880497763070', '414');
+insert into Credit_cards (expiry_date, number, CVV) values ('2022-03-03', '211880497763070', '333');
+
+--populate Owns table
+insert into Owns (from_date, number, cust_id) values ('2017-05-25', '4175003665378449', 1);
+insert into Owns (from_date, number, cust_id) values ('2017-05-19', '5453645393112118', 2);
+insert into Owns (from_date, number, cust_id) values ('2018-03-08', '560222549646904780', 3);
+insert into Owns (from_date, number, cust_id) values ('2019-06-24', '3533846600792838', 4);
+insert into Owns (from_date, number, cust_id) values ('2018-03-12', '374283312104573', 5);
+insert into Owns (from_date, number, cust_id) values ('2018-04-04', '630458284476134458', 6);
+insert into Owns (from_date, number, cust_id) values ('2018-12-01', '564182540168178440', 7);
+insert into Owns (from_date, number, cust_id) values ('2018-01-11', '3567052898252853', 8);
+insert into Owns (from_date, number, cust_id) values ('2018-04-05', '30000532068750', 9);
+insert into Owns (from_date, number, cust_id) values ('2018-04-12', '56022292947227624', 10);
+insert into Owns (from_date, number, cust_id) values ('2017-12-19', '3531724438465020', 11);
+insert into Owns (from_date, number, cust_id) values ('2016-02-21', '4041370974024', 12);
+insert into Owns (from_date, number, cust_id) values ('2015-05-02', '3530018806140112', 13);
+insert into Owns (from_date, number, cust_id) values ('2015-05-31', '5344807003529486', 14);
+insert into Owns (from_date, number, cust_id) values ('2016-03-29', '5018377800024433', 15);
+insert into Owns (from_date, number, cust_id) values ('2017-10-04', '6759274606121255374', 16);
+insert into Owns (from_date, number, cust_id) values ('2018-09-14', '374283174987222', 17);
+insert into Owns (from_date, number, cust_id) values ('2018-12-01', '5018681020026476334', 18);
+insert into Owns (from_date, number, cust_id) values ('2018-03-21', '3542502207619705', 19);
+insert into Owns (from_date, number, cust_id) values ('2018-08-13', '201880497763070', 20);
+insert into Owns (from_date, number, cust_id) values ('2018-10-13', '211880497763070', 20); -- multiple credit card owned by 1 person: id 20
 
 --populate Buys table
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-24', 1, 1, '4175003665378449');
