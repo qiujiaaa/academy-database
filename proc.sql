@@ -281,6 +281,85 @@ CREATE TRIGGER offering_start_end_date
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
+-- For each course offered by the company, a customer can register for at most one of its sessions.
+CREATE OR REPLACE FUNCTION register_one_course_session()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Registers R1, Redeems R2
+    WHERE (NEW.course_id = R1.course_id AND NEW.launch_date = R1.launch_date)
+    OR (NEW.course_id = R2.course_id AND NEW.launch_date = R2.launch_date);
+    IF count > 0 THEN
+        RAISE NOTICE 'A customer can register at most one of session of each course';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS register_one_course_session ON Registers
+CREATE TRIGGER register_one_course_session
+BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
+EXECUTE FUNCTION register_one_course_session;
+
+DROP TRIGGER IF EXISTS register_one_course_session ON Redeems
+CREATE TRIGGER register_one_course_session
+BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
+EXECUTE FUNCTION register_one_course_session;
+
+-- Register sessions before the offering registration deadline
+CREATE OR REPLACE FUNCTION register_before_deadline()
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Offerings O
+    WHERE NEW.course_id = O.course_id
+    AND NEW.launch_date = O.launch_date
+    AND NEW.date > O.registration_deadline;
+    IF count > 0 THEN
+        RAISE NOTICE 'Register of session must be before the registration deadline of Offering';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS register_before_deadline ON Registers
+CREATE TRIGGER register_before_deadline
+BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
+EXECUTE FUNCTION register_before_deadline;
+
+-- Redeems sessions before the offering registration deadline
+CREATE OR REPLACE FUNCTION redeems_before_deadline()
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Offerings O
+    WHERE NEW.course_id = O.course_id
+    AND NEW.launch_date = O.launch_date
+    AND NEW.redeems_date > O.registration_deadline;
+    IF count > 0 THEN
+        RAISE NOTICE 'Redeem of session must be before the registration deadline of Offering';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS redeems_before_deadline ON Redeems
+CREATE TRIGGER redeems_before_deadline
+BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
+EXECUTE FUNCTION redeems_before_deadline;
+
 /* ---------------------- functionalities ----------------------*/
 
 --add_employee
