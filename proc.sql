@@ -367,7 +367,7 @@ CREATE OR REPLACE FUNCTION session_timing()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (NEW.end_time > start_time) THEN
-        RAISE NOTICE 'End time is earlier than start time'
+        RAISE NOTICE 'End time is earlier than start time';
         RETURN NULL;
     ELSIF (NEW.start_time < '09:00' OR NEW.start_time > '18:00' OR (NEW.start_time >= '12:00' AND NEW.start_time < '14:00'))
         RAISE NOTICE 'start time is out of range';
@@ -390,7 +390,7 @@ EXECUTE FUNCTION session_timing();
 
 -- No two sessions for the same course offering can be conducted on the same day and at the same time.
 CREATE OR REPLACE FUNCTION same_offering_session_timing()
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
 BEGIN
@@ -514,7 +514,7 @@ EXECUTE FUNCTION update_refund_policy();
 --find_rooms
 CREATE OR REPLACE FUNCTION
 find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
-RETURN TABLE(rid INT) AS $$
+RETURNS TABLE(rid INT) AS $$
 DECLARE
     end_hour TIME;
 BEGIN
