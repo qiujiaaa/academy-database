@@ -363,7 +363,7 @@ EXECUTE FUNCTION redeems_before_deadline();
 
 -- The earliest session can start at 9am and the latest session (for each day) must end by 6pm,
 -- and no sessions are conducted between 12pm to 2pm
-CREATE OR REPLACE FUNCTION session_timing() ON Sessions
+CREATE OR REPLACE FUNCTION session_timing()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (NEW.end_time > start_time) THEN
@@ -389,7 +389,7 @@ BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION session_timing();
 
 -- No two sessions for the same course offering can be conducted on the same day and at the same time.
-CREATE OR REPLACE FUNCTION same_offering_session_timing() ON Sessions
+CREATE OR REPLACE FUNCTION same_offering_session_timing()
 RETURN TRIGGER AS $$
 DECLARE
     count INTEGER;
@@ -414,7 +414,7 @@ BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION same_offering_session_timing();
 
 --check cancels is cancelling a legitimate register or redeem
-CREATE OR REPLACE FUNCTION cancel_legitimate_check() ON Cancels
+CREATE OR REPLACE FUNCTION cancel_legitimate_check()
 RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
@@ -438,7 +438,7 @@ BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION cancel_legitimate_check();
 
 -- update session start and end time is of course duration.
-CREATE OR REPLACE FUNCTION check_session_duration() ON Sessions
+CREATE OR REPLACE FUNCTION check_session_duration()
 RETURNS TRIGGER AS $$
 BEGIN
     SELECT *
@@ -460,7 +460,7 @@ EXECUTE FUNCTION check_session_duration();
 -- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
 -- For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
 -- if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
-CREATE OR REPLACE FUNCTION update_refund_policy() ON Cancels
+CREATE OR REPLACE FUNCTION update_refund_policy()
 RETURNS TRIGGER AS $$
 DECLARE
     count1 INTEGER;
@@ -514,12 +514,12 @@ EXECUTE FUNCTION update_refund_policy();
 --find_rooms
 CREATE OR REPLACE FUNCTION
 find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
-RETURN SETOF RECORD AS $$
+RETURN TABLE(rid INT) AS $$
 DECLARE
     end_hour TIME;
 BEGIN
     end_hour := start_hour + session_duration;
-    RETURN  SELECT rid
+      SELECT rid
             FROM Rooms
             EXCEPT
             SELECT C.rid
