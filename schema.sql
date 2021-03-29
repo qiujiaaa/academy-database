@@ -1,5 +1,5 @@
 -- add on to drop table if exist ....  cascade?
-drop table if exists Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_instructors, Part_time_instructors, Administrators, Managers, Course_areas, Specializes, Courses, Offerings, Rooms, Sessions, Redeems, Registers, Cancels, Conducts cascade;
+drop table if exists Owns, Customers, Course_packages, Credit_cards, Buys, Employees, Pay_slips, Full_time_Emp, Part_time_Emp, Instructors, Full_time_instructors, Part_time_instructors, Administrators, Managers, Course_areas, Specializes, Courses, Offerings, Rooms, Sessions, Redeems, Registers, Cancels, Conducts cascade;
 
 create table Customers (
     phone   text,     
@@ -25,10 +25,16 @@ create table Credit_cards (
     expiry_date date not null,
     number      text,     
     CVV         text not null,
-    from_date   date,
-    cust_id     integer not null,
-    primary key (number /*cust_id ??*/),
-    foreign key (cust_id) references Customers(cust_id) 
+    primary key (number)
+);
+
+create table Owns (
+    from_date date, 
+    number text,
+    cust_id integer not null,
+    primary key (number),
+    foreign key (cust_id) references Customers(cust_id),
+    foreign key (number) references Credit_cards(number)
 );
 
 create table Buys (
@@ -36,11 +42,9 @@ create table Buys (
     num_remaining_redemptions   integer not null,
     package_id                  integer,
     number                      text,
-    -- cust_id                  integer not null,
     primary key (date, package_id, number),
     foreign key (package_id) references Course_packages(package_id),
     foreign key (number) references Credit_cards(number),
-    -- foreign key (cust_id) references Customers(cust_id) or Credit_cards?,
     check (num_remaining_redemptions >= 0)    
 );
 
@@ -215,7 +219,7 @@ create table Registers (
     number          text,
     date            date,
     primary key (course_id, launch_date, sid, number, date),
-    foreign key (number) references Credit_cards (number),
+    foreign key (number) references Owns (number),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
