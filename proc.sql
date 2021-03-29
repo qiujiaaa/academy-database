@@ -301,12 +301,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS register_one_course_session ON Registers
+DROP TRIGGER IF EXISTS register_one_course_session ON Registers;
 CREATE TRIGGER register_one_course_session
 BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
 EXECUTE FUNCTION register_one_course_session;
 
-DROP TRIGGER IF EXISTS register_one_course_session ON Redeems
+DROP TRIGGER IF EXISTS register_one_course_session ON Redeems;
 CREATE TRIGGER register_one_course_session
 BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
 EXECUTE FUNCTION register_one_course_session;
@@ -331,7 +331,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS register_before_deadline ON Registers
+DROP TRIGGER IF EXISTS register_before_deadline ON Registers;
 CREATE TRIGGER register_before_deadline
 BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
 EXECUTE FUNCTION register_before_deadline;
@@ -356,7 +356,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS redeems_before_deadline ON Redeems
+DROP TRIGGER IF EXISTS redeems_before_deadline ON Redeems;
 CREATE TRIGGER redeems_before_deadline
 BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
 EXECUTE FUNCTION redeems_before_deadline;
@@ -383,7 +383,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS session_timing ON Sessions
+DROP TRIGGER IF EXISTS session_timing ON Sessions;
 CREATE TRIGGER session_timing
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION session_timing;
@@ -408,7 +408,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS same_offering_session_timing ON Sessions
+DROP TRIGGER IF EXISTS same_offering_session_timing ON Sessions;
 CREATE TRIGGER same_offering_session_timing
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION same_offering_session_timing;
@@ -432,7 +432,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS cancel_legitimate_check ON Cancels
+DROP TRIGGER IF EXISTS cancel_legitimate_check ON Cancels;
 CREATE TRIGGER cancel_legitimate_check
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION cancel_legitimate_check;
@@ -451,7 +451,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS check_session_duration on Sessions
+DROP TRIGGER IF EXISTS check_session_duration on Sessions;
 CREATE TRIGGER check_session_duration
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION check_session_duration;
@@ -504,7 +504,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS update_refund_policy ON Cancels
+DROP TRIGGER IF EXISTS update_refund_policy ON Cancels;
 CREATE TRIGGER update_refund_policy
 BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
 EXECUTE FUNCTION update_refund_policy;
