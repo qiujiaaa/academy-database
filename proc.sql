@@ -717,17 +717,10 @@ $$ LANGUAGE plpgsql;
 
 --find_instructors
 CREATE OR REPLACE FUNCTION
-<<<<<<< HEAD
 find_instructors(cid INTEGER, sessionDate DATE, sessionStartHour TIME)
 RETURNS TABLE(eid INTEGER, name TEXT) AS $$
     SELECT DISTINCT eid, name 
     FROM (Employees natural join Specializes) natural join Courses 
-=======
-find_instructors(IN cid INTEGER, IN sessionDate DATE, IN sessionStartHour TIME, OUT eid INTEGER, OUT name TEXT)
-RETURNS SETOF RECORD AS $$
-    SELECT DISTINCT eid, name
-    FROM (Employees natural join Specializes) natural join Courses
->>>>>>> master
     WHERE course_id = cid
     EXCEPT
     SELECT DISTINCT eid, name
