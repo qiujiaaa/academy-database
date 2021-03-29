@@ -281,7 +281,194 @@ CREATE TRIGGER offering_start_end_date
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
-/* ------------------------------- functionalities -------------------------------*/
+-- For each course offered by the company, a customer can register for at most one of its sessions.
+CREATE OR REPLACE FUNCTION register_one_course_session()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Registers R1, Redeems R2
+    WHERE (NEW.course_id = R1.course_id AND NEW.launch_date = R1.launch_date AND NEW.number = R1.number)
+    OR (NEW.course_id = R2.course_id AND NEW.launch_date = R2.launch_date AND NEW.number = R2.number);
+    IF count > 0 THEN
+        RAISE NOTICE 'A customer can register at most one session of each course';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS register_one_course_session ON Registers
+CREATE TRIGGER register_one_course_session
+BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
+EXECUTE FUNCTION register_one_course_session;
+
+DROP TRIGGER IF EXISTS register_one_course_session ON Redeems
+CREATE TRIGGER register_one_course_session
+BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
+EXECUTE FUNCTION register_one_course_session;
+
+-- Register sessions before the offering registration deadline
+CREATE OR REPLACE FUNCTION register_before_deadline()
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Offerings O
+    WHERE NEW.course_id = O.course_id
+    AND NEW.launch_date = O.launch_date
+    AND NEW.date > O.registration_deadline;
+    IF count > 0 THEN
+        RAISE NOTICE 'Register of session must be before the registration deadline of Offering';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS register_before_deadline ON Registers
+CREATE TRIGGER register_before_deadline
+BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
+EXECUTE FUNCTION register_before_deadline;
+
+-- Redeems sessions before the offering registration deadline
+CREATE OR REPLACE FUNCTION redeems_before_deadline()
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Offerings O
+    WHERE NEW.course_id = O.course_id
+    AND NEW.launch_date = O.launch_date
+    AND NEW.redeems_date > O.registration_deadline;
+    IF count > 0 THEN
+        RAISE NOTICE 'Redeem of session must be before the registration deadline of Offering';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS redeems_before_deadline ON Redeems
+CREATE TRIGGER redeems_before_deadline
+BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
+EXECUTE FUNCTION redeems_before_deadline;
+
+-- The earliest session can start at 9am and the latest session (for each day) must end by 6pm,
+-- and no sessions are conducted between 12pm to 2pm
+CREATE OR REPLACE FUNCTION session_timing() ON Sessions
+RETURN TRIGGER AS $$
+BEGIN
+    IF (NEW.end_time > start_time) THEN
+        RAISE NOTICE 'End time is earlier than start time'
+        RETURN NULL;
+    ELSIF (NEW.start_time < '09:00' OR NEW.start_time > '18:00' OR (NEW.start_time >= '12:00' AND NEW.start_time < '14:00'))
+        RAISE NOTICE 'start time is out of range';
+        RETURN NULL;
+    ELSIF (NEW.end_time < '09:00' OR NEW.end_time > '18:00' OR (NEW.end_time >= '12:00' AND NEW.end_time < '14:00'))
+        RAISE NOTICE 'end time is out of range';
+        RETURN NULL;
+    ELSIF (NEW.start_time < '12:00' AND NEW.end_time > '12:00')
+        RAISE NOTICE 'session is not allowed to conduct between 12pm to 2pm';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS session_timing ON Sessions
+CREATE TRIGGER session_timing
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION session_timing;
+
+-- No two sessions for the same course offering can be conducted on the same day and at the same time.
+CREATE OR REPLACE FUNCTION same_offering_session_timing() ON Sessions
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Sessions S
+    WHERE NEW.course_id = S.course_id
+    AND NEW.launch_date = S.launch_date
+    AND NEW.start_time = S.start_time;
+    IF count > 0 THEN
+        RAISE NOTICE 'Two sessions for same course offering cannot be conducted on same day and same time!';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS same_offering_session_timing ON Sessions
+CREATE TRIGGER same_offering_session_timing
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION same_offering_session_timing;
+
+--check cancels is cancelling a legitimate register or redeem
+CREATE OR REPLACE FUNCTION cancel_legitimate_check() ON Cancels
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Registers R1, Redeems R2, Credit_Cards C
+    WHERE (NEW.launch_date = R1.launch_date AND NEW.course_id = R1.course_id AND NEW.cust_id = C.cust_id AND R1.number = C.number)
+    OR (NEW.launch_date = R2.launch_date AND NEW.course_id = R2.course_id AND NEW.cust_id = C.cust_id AND R2.number = C.number);
+    IF COUNT = 0 THEN
+        RAISE NOTICE 'Cancel is not cancelling a legitimate register or redeem';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS cancel_legitimate_check ON Cancels
+CREATE TRIGGER cancel_legitimate_check
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION cancel_legitimate_check;
+
+-- check session start and end time is of course duration.
+CREATE OR REPLACE FUNCTION check_session_duration ON Sessions
+RETURN TRIGGER AS $$
+BEGIN
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
+-- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+-- For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
+-- if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+CREATE OR REPLACE FUNCTION update_refund_policy() ON Cancels
+RETURN TRIGGER AS $$
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Registers, Offerings
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/* ---------------------- functionalities ----------------------*/
+
+--find_rooms
+CREATE OR REPLACE FUNCTION
+find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
+RETURN SETOF RECORD AS $$
+    SELECT rid
+    FROM Rooms
+    EXCEPT
+    SELECT rid
+    FROM Conducts C,
+$$ LANGUAGE plpgsql;
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
@@ -444,14 +631,14 @@ DECLARE
     course_id INTEGER;
     title_exists INTEGER;
     course_area_exists INTEGER;
-BEGIN 
+BEGIN
     SELECT COUNT(*) INTO course_id FROM Courses;
     course_id := course_id + 1;
     SELECT COUNT(*) INTO course_area_exists FROM Course_areas WHERE name = newArea;
     SELECT COUNT(*) INTO title_exists FROM Courses WHERE title = newTitle;
     IF newTitle IS NULL THEN
         RAISE EXCEPTION 'Title of Course cannot be null';
-    ELSIF newArea IS NULL THEN  
+    ELSIF newArea IS NULL THEN
         RAISE EXCEPTION 'Course area cannot be null';
     ELSIF course_area_exists = 0 THEN
         RAISE EXCEPTION 'Course area does not exist';
@@ -466,13 +653,13 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION
 find_instructors(IN cid INTEGER, IN sessionDate DATE, IN sessionStartHour TIME, OUT eid INTEGER, OUT name TEXT)
 RETURNS SETOF RECORD AS $$
-    SELECT DISTINCT eid, name 
-    FROM (Employees natural join Specializes) natural join Courses 
+    SELECT DISTINCT eid, name
+    FROM (Employees natural join Specializes) natural join Courses
     WHERE course_id = cid
     EXCEPT
     SELECT DISTINCT eid, name
     FROM (Employees natural join Conducts) natural join Sessions
-    WHERE date = sessionDate AND 
+    WHERE date = sessionDate AND
     ((start_time >= (sessionStartHour - interval '1 hour') AND start_time < (sessionStartHour + interval '2 hours')) OR
     (end_time > (sessionStartHour - interval '1 hour') AND end_time <= (sessionStartHour + interval '2 hours')));
 $$ LANGUAGE sql;
