@@ -366,7 +366,7 @@ EXECUTE FUNCTION redeems_before_deadline();
 CREATE OR REPLACE FUNCTION session_timing()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF (NEW.end_time > NEW.start_time) THEN
+    IF (NEW.start_time > NEW.end_time) THEN
         RAISE NOTICE 'End time is earlier than start time';
         RETURN NULL;
     ELSIF (NEW.start_time < '09:00' OR NEW.start_time > '18:00' OR (NEW.start_time >= '12:00' AND NEW.start_time < '14:00')) THEN
