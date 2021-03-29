@@ -304,12 +304,12 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS register_one_course_session ON Registers;
 CREATE TRIGGER register_one_course_session
 BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
-EXECUTE FUNCTION register_one_course_session;
+EXECUTE FUNCTION register_one_course_session();
 
 DROP TRIGGER IF EXISTS register_one_course_session ON Redeems;
 CREATE TRIGGER register_one_course_session
 BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
-EXECUTE FUNCTION register_one_course_session;
+EXECUTE FUNCTION register_one_course_session();
 
 -- Register sessions before the offering registration deadline
 CREATE OR REPLACE FUNCTION register_before_deadline()
@@ -334,7 +334,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS register_before_deadline ON Registers;
 CREATE TRIGGER register_before_deadline
 BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
-EXECUTE FUNCTION register_before_deadline;
+EXECUTE FUNCTION register_before_deadline();
 
 -- Redeems sessions before the offering registration deadline
 CREATE OR REPLACE FUNCTION redeems_before_deadline()
@@ -359,7 +359,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS redeems_before_deadline ON Redeems;
 CREATE TRIGGER redeems_before_deadline
 BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
-EXECUTE FUNCTION redeems_before_deadline;
+EXECUTE FUNCTION redeems_before_deadline();
 
 -- The earliest session can start at 9am and the latest session (for each day) must end by 6pm,
 -- and no sessions are conducted between 12pm to 2pm
@@ -386,7 +386,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS session_timing ON Sessions;
 CREATE TRIGGER session_timing
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
-EXECUTE FUNCTION session_timing;
+EXECUTE FUNCTION session_timing();
 
 -- No two sessions for the same course offering can be conducted on the same day and at the same time.
 CREATE OR REPLACE FUNCTION same_offering_session_timing() ON Sessions
@@ -411,7 +411,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS same_offering_session_timing ON Sessions;
 CREATE TRIGGER same_offering_session_timing
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
-EXECUTE FUNCTION same_offering_session_timing;
+EXECUTE FUNCTION same_offering_session_timing();
 
 --check cancels is cancelling a legitimate register or redeem
 CREATE OR REPLACE FUNCTION cancel_legitimate_check() ON Cancels
@@ -435,7 +435,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS cancel_legitimate_check ON Cancels;
 CREATE TRIGGER cancel_legitimate_check
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
-EXECUTE FUNCTION cancel_legitimate_check;
+EXECUTE FUNCTION cancel_legitimate_check();
 
 -- update session start and end time is of course duration.
 CREATE OR REPLACE FUNCTION check_session_duration() ON Sessions
@@ -454,7 +454,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS check_session_duration on Sessions;
 CREATE TRIGGER check_session_duration
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
-EXECUTE FUNCTION check_session_duration;
+EXECUTE FUNCTION check_session_duration();
 
 -- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
 -- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
@@ -507,7 +507,7 @@ $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS update_refund_policy ON Cancels;
 CREATE TRIGGER update_refund_policy
 BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
-EXECUTE FUNCTION update_refund_policy;
+EXECUTE FUNCTION update_refund_policy();
 
 /* ---------------------- functionalities ----------------------*/
 
