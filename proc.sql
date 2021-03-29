@@ -372,7 +372,7 @@ BEGIN
     ELSIF (NEW.start_time < '09:00' OR NEW.start_time > '18:00' OR (NEW.start_time >= '12:00' AND NEW.start_time < '14:00')) THEN
         RAISE NOTICE 'start time is out of range';
         RETURN NULL;
-    ELSIF (NEW.end_time < '09:00' OR NEW.end_time > '18:00' OR (NEW.end_time >= '12:00' AND NEW.end_time < '14:00')) THEN
+    ELSIF (NEW.end_time < '09:00' OR NEW.end_time > '18:00' OR (NEW.end_time > '12:00' AND NEW.end_time <= '14:00')) THEN
         RAISE NOTICE 'end time is out of range';
         RETURN NULL;
     ELSIF (NEW.start_time < '12:00' AND NEW.end_time > '12:00') THEN
@@ -399,8 +399,7 @@ BEGIN
     WHERE NEW.course_id = S.course_id
     AND NEW.launch_date = S.launch_date
     AND NEW.start_time = S.start_time
-    AND NEW.date = S.date
-    AND NEW.start_time = S.start_time;
+    AND NEW.date = S.date;
     IF count > 0 THEN
         RAISE NOTICE 'Two sessions for same course offering cannot be conducted on same day and same time!';
         RETURN NULL;
