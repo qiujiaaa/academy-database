@@ -375,7 +375,7 @@ BEGIN
     ELSIF (NEW.end_time < '09:00' OR NEW.end_time > '18:00' OR (NEW.end_time >= '12:00' AND NEW.end_time < '14:00')) THEN
         RAISE NOTICE 'end time is out of range';
         RETURN NULL;
-    ELSIF (NEW.start_time < '12:00' AND NEW.end_time > '12:00') THENA
+    ELSIF (NEW.start_time < '12:00' AND NEW.end_time > '12:00') THEN
         RAISE NOTICE 'session is not allowed to conduct between 12pm to 2pm';
         RETURN NULL;
     END IF;
