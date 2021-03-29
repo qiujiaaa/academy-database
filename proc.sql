@@ -442,11 +442,13 @@ CREATE OR REPLACE FUNCTION check_session_duration()
 RETURNS TRIGGER AS $$
 DECLARE
     course_duration INTEGER;
+    course_minutes INTERVAL;
 BEGIN
     SELECT duration INTO course_duration
     FROM Courses C
     WHERE NEW.course_id = C.course_id;
-    IF (NEW.end_time <> NEW.start_time + course_duration) THEN
+    course_minutes := course_duration * INTERVAL '1 minute';
+    IF (NEW.end_time <> (NEW.start_time + course_duration)) THEN
         NEW.end_time := NEW.start_time + course_duration;
     END IF;
     RETURN NEW;
