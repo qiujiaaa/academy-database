@@ -461,6 +461,7 @@ CREATE TRIGGER check_session_duration
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION check_session_duration();
 
+/*
 -- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
 -- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
 -- For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
@@ -513,6 +514,7 @@ DROP TRIGGER IF EXISTS update_refund_policy ON Cancels;
 CREATE TRIGGER update_refund_policy
 BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
 EXECUTE FUNCTION update_refund_policy();
+*/
 
 /* ---------------------- functionalities ----------------------*/
 
@@ -839,7 +841,70 @@ END;
 $$ LANGUAGE plpgsql;
 
 --cancel_registration (20)
+CREATE OR REPLACE FUNCTION
+cancel_registration(cust INTEGER, cid INTEGER, cdate DATE)
+RETURNS VOID AS $$
+DECLARE
+    temp INTEGER;
+    temp_1 TEXT;
+    temp_2 TEXT;
+    days INTEGER;
+    session_date DATE;
+    cc TEXT;
+    session INTEGER;
+    amt NUMERIC;
+    buy_date DATE;
+    remaining INTEGER;
+    package INTEGER;
+BEGIN
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Course Offering does not exist';
+    END IF;
+    SELECT number INTO temp_1 
+    FROM Registers natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    SELECT number INTO temp_2 
+    FROM Redeems natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    IF temp_1 IS NULL AND temp_2 IS NULL THEN   
+        RAISE EXCEPTION 'Customer does not have an existing session for this course offering';
+    END IF;
 
+    IF temp_1 IS NOT NULL THEN
+        -- Credit card payment in Registers
+        SELECT S.date, R.number, R.sid INTO session_date, cc, session
+        FROM Sessions S join (Registers natural join Owns) R 
+        ON S.course_id = R.course_id AND S.launch_date = R.launch_date AND S.sid = R.sid
+        WHERE S.course_id = cid AND S.launch_date = cdate AND R.cust_id = cust;
+        SELECT session_date::date - CURRENT_DATE::date INTO days;
+        IF days < 7 THEN 
+            RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
+        ELSE
+            DELETE FROM Registers WHERE course_id = cid AND launch_date = cdate and number = cc;
+            SELECT fees INTO amt FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+            INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, amt * 0.9, FALSE);
+        END IF;
+    ELSE 
+        -- add 1 session into buys
+        SELECT R.date, R.number, R.package_id, S.sid, S.date INTO buy_date, cc, package, session, session_date
+        FROM Sessions S join (Redeems natural join Owns) R 
+        ON S.course_id = R.course_id AND S.launch_date = R.launch_date AND S.sid = R.sid
+        WHERE S.course_id = cid AND S.launch_date = cdate AND R.cust_id = cust;
+        SELECT session_date::date - CURRENT_DATE::date INTO days;
+        IF days < 7 THEN 
+            RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
+        ELSE
+            DELETE FROM Redeems WHERE course_id = cid AND launch_date = cdate and number = cc;
+            SELECT num_remaining_redemptions INTO remaining FROM Buys 
+            WHERE date = buy_date AND package_id = package AND number = cc;
+            UPDATE Buys SET num_remaining_redemptions = remaining + 1 
+            WHERE date = buy_date AND package_id = package AND number = cc;
+            INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, 0, TRUE);
+        END IF;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
 
 --top_packages
 

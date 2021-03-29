@@ -505,8 +505,8 @@ insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, pack
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 8, '2020-08-26', 722.70, false);
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 1, '2020-09-01', 722.70, false);
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 15, '2020-09-03', 722.70, false);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 1, '2021-06-15', 545.40, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 7, '2021-06-10', 545.40, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 3, '2021-07-24', 722.70, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 16, '2021-07-23', 722.70, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 7, '2021-07-27', 722.70, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 1, '2021-06-15', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 7, '2021-06-10', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 3, '2021-07-24', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 16, '2021-07-23', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 7, '2021-07-27', 0, true);
