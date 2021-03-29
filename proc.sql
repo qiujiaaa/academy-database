@@ -434,7 +434,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS cancel_legitimate_check ON Cancels;
 CREATE TRIGGER cancel_legitimate_check
-BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
 EXECUTE FUNCTION cancel_legitimate_check();
 
 -- update session start and end time is of course duration.
