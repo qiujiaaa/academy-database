@@ -501,14 +501,15 @@ $$ LANGUAGE sql;
 
 
 --update_instructor
+--course offerings identifier is (course_id, launch_date)
 CREATE OR REPLACE FUNCTION 
-update_instructor(cid INTEGER, sess_id INTEGER, new_eid INTEGER)
+update_instructor(cid INTEGER, l_date DATE, sess_id INTEGER, new_eid INTEGER)
 RETURNS VOID AS $$
 DECLARE
     instr_count INTEGER;
     conducts_count INTEGER;
     today DATE;
-    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND sess_id = sid);
+    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid);
     r RECORD;
 BEGIN
     SELECT COUNT(*) FROM Instructors WHERE eid = new_eid INTO instr_count;
@@ -516,7 +517,7 @@ BEGIN
         RAISE EXCEPTION 'eid does not exists';
         RETURN;
     ELSE 
-        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND sess_id = sid INTO conducts_count;
+        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO conducts_count;
         IF conducts_count = 0 THEN
             RAISE EXCEPTION 'This session does not exists';
             RETURN;
@@ -528,7 +529,7 @@ BEGIN
                 RAISE EXCEPTION 'Session has already launched, cannot change instructor';
                 RETURN;
             ELSE
-                UPDATE Conducts SET eid = new_eid WHERE course_id = cid AND sess_id = sid;
+                UPDATE Conducts SET eid = new_eid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
             END IF;
             CLOSE curs;
         END IF;
@@ -537,13 +538,14 @@ END
 $$ LANGUAGE plpgsql;
 
 --update_room
-CREATE OR REPLACE FUNCTION update_room(cid INTEGER, sess_id INTEGER, new_rid INTEGER)
+--course offerings identifier is (course_id, launch_date)
+CREATE OR REPLACE FUNCTION update_room(cid INTEGER, l_date DATE sess_id INTEGER, new_rid INTEGER)
 RETURNS VOID AS $$
 DECLARE
     room_count INTEGER;
     conducts_count INTEGER;
     today DATE;
-    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND sess_id = sid);
+    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid);
     r RECORD;
     seat_cap INTEGER;
     no_of_reg INTEGER;
@@ -553,7 +555,7 @@ BEGIN
         RAISE EXCEPTION 'Room does not exists';
         RETURN;
     ELSE
-        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND sess_id = sid INTO conducts_count;
+        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO conducts_count;
         IF conducts_count = 0 THEN --Session does not exists
             RAISE EXCEPTION 'This session does not exists';
             RETURN;
@@ -566,16 +568,90 @@ BEGIN
                 RETURN;
             ELSE
                 SELECT seating_capacity FROM Rooms WHERE rid = new_rid INTO seat_cap;
-                SELECT COUNT(*) FROM Registers WHERE course_id = cid AND sess_id = sid INTO no_of_reg;
+                SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO no_of_reg;
                 IF no_of_reg > seat_cap THEN --No of Reg > Seat Cap
                     RAISE EXCEPTION 'Number of registration for this session exceeds the seating capacity of new room';
                     RETURN;
                 ELSE
-                    UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND sess_id = sid;
+                    UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 END IF;
             END IF;
             CLOSE curs;
         END IF;
     END IF;
 END             
+$$ LANGUAGE plpgsql;
+
+--remove_session
+--course offerings identifier is (course_id, launch_date)
+CREATE OR REPLACE FUNCTION remove_session(cid INTEGER, l_date DATE, sess_id INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    sess_count INTEGER;
+    curs CURSOR FOR (SELECT * FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid);
+    r RECORD;
+    today DATE;
+    regist_count INTEGER;
+BEGIN
+    SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_count;
+    IF sess_count = 0 THEN
+        RAISE EXCEPTION 'Session does not exists';
+        RETURN;
+    ELSE
+        SELECT CURRENT_DATE INTO today;
+        OPEN curs;
+        FETCH curs into r;
+        IF r.launch_date < today THEN
+            RAISE EXCEPTION 'Session has already launched, cannot remove session';
+            RETURN;
+        ELSE
+            SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sid = sess_id into regist_count;
+            IF regist_count > 0 THEN
+                RAISE EXCEPTION 'There is at least one registration for the session';
+                RETURN;
+            ELSE
+                DELETE FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+            END IF;
+        END IF;
+        CLOSE curs;
+    END IF;
+END
+$$ LANGUAGE plpgsql;
+
+--add_session
+--course offerings identifier is (course_id, launch_date)
+CREATE OR REPLACE FUNCTION 
+add_session(cid INTEGER, l_date DATE, new_sid INTEGER, new_date DATE, new_start TIME, instr_id INTEGER, room_id INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    today DATE;
+    deadline DATE;
+    offering_start DATE;
+    offering_end DATE;
+BEGIN
+    SELECT CURRENT_DATE INTO today;
+    SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO deadline;
+    IF deadline < today THEN
+        RAISE EXCEPTION 'Course offerings registration deadline passed';
+        RETURN;
+    ELSE
+        SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_start;
+        SELECT end_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_end;
+        
+        --update if new session date is earlier than offering start date
+        IF offering_start > new_date THEN 
+            --what will happen if new_date is earlier than resgistration date?
+            UPDATE Offerings SET start_date = new_date WHERE course_id = cid AND l_date = launch_date;
+        END IF;
+        
+        --update if new session date is later than offering end date
+        IF offering_end < new_date THEN
+            UPDATE Offerings SET end_date = new_date WHERE course_id = cid AND l_date = launch_date;
+        END IF;
+        
+        --end_time is null as it is not given
+        INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, null, new_date);
+        INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
+    END IF;
+END
 $$ LANGUAGE plpgsql;
