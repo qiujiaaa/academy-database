@@ -34,7 +34,7 @@ create table Owns (
     cust_id integer not null,
     primary key (number),
     foreign key (cust_id) references Customers(cust_id),
-    foreign key (number) references Credit_cards(number)
+    foreign key (number) references Credit_cards(number) on update cascade
 );
 
 create table Buys (
