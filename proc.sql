@@ -655,3 +655,112 @@ BEGIN
     END IF;
 END
 $$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--view_summary_report
+--SELECT * FROM table
+--WHERE YEAR(date_created) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+--AND MONTH(date_created) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+--DATE_PART('month', current_date - '0 month'::INTERVAL);
+--CONCAT(counter::TEXT, ' month');
+CREATE OR REPLACE FUNCTION view_summary_report(n INTEGER)
+RETURNS TABLE(mth INTEGER, yr INTEGER, salary_paid INTEGER, sales_of_cpkg INTEGER, reg_fee_cc INTEGER, refund_fees INTEGER, creg_cpkg INTEGER) AS $$
+BEGIN
+    IF n <= 0 THEN
+        RAISE EXCEPTION 'Please input a number greater than 0';
+        RETURN;
+    END IF;
+    
+    FOR i IN 0..(n-1) LOOP
+        mth := DATE_PART('month', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL);
+        yr := DATE_PART('year', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL);
+        
+        --total salary paid
+        SELECT SUM(amount)
+        FROM Pay_slips
+        WHERE DATE_PART('year', payment_date) = DATE_PART('year', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        AND DATE_PART('month', payment_date) = DATE_PART('month', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        INTO salary_paid;
+        
+        IF salary_paid IS NULL THEN
+            salary_paid := 0;
+        END IF;
+        
+        --total amount of sales of course packages
+        SELECT SUM(C.price)
+        FROM Buys B, Course_packages C
+        WHERE B.package_id = C.package_id
+        AND DATE_PART('year', B.date) = DATE_PART('year', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        AND DATE_PART('month', B.date) = DATE_PART('month', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        INTO sales_of_cpkg;
+        
+        IF sales_of_cpkg IS NULL THEN
+            sales_of_cpkg := 0;
+        END IF;
+        
+        --total registration fees paid via credit card
+        SELECT SUM(O.fees)
+        FROM Registers R, Offerings O
+        WHERE R.course_id = O.course_id
+        AND R.launch_date = O.launch_date
+        AND DATE_PART('year', R.date) = DATE_PART('year', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        AND DATE_PART('month', R.date) = DATE_PART('month', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        INTO reg_fee_cc;
+        
+        IF reg_fee_cc IS NULL THEN
+            reg_fee_cc := 0;
+        END IF;
+        
+        --total amount refunded registration fees
+        SELECT SUM(refund_amt)
+        FROM Cancels
+        WHERE DATE_PART('year', date) = DATE_PART('year', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        AND DATE_PART('month', date) = DATE_PART('month', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        INTO refund_fees;
+        
+        IF refund_fees IS NULL THEN
+            refund_fees := 0;
+        END IF;
+        
+        --total number of course registrationss via course_package redemptions
+        SELECT COUNT(*)
+        FROM Redeems
+        WHERE DATE_PART('year', redeems_date) = DATE_PART('year', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        AND DATE_PART('month', redeems_date) = DATE_PART('month', CURRENT_DATE - CONCAT(i::TEXT, ' month')::INTERVAL)
+        INTO creg_cpkg;
+        
+        RETURN NEXT;
+        
+    END LOOP;
+    
+END
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+
