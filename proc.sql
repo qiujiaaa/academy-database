@@ -289,10 +289,10 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO count
     FROM Registers R1, Redeems R2
-    WHERE (NEW.course_id = R1.course_id AND NEW.launch_date = R1.launch_date)
-    OR (NEW.course_id = R2.course_id AND NEW.launch_date = R2.launch_date);
+    WHERE (NEW.course_id = R1.course_id AND NEW.launch_date = R1.launch_date AND NEW.number = R1.number)
+    OR (NEW.course_id = R2.course_id AND NEW.launch_date = R2.launch_date AND NEW.number = R2.number);
     IF count > 0 THEN
-        RAISE NOTICE 'A customer can register at most one of session of each course';
+        RAISE NOTICE 'A customer can register at most one session of each course';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -360,7 +360,115 @@ CREATE TRIGGER redeems_before_deadline
 BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
 EXECUTE FUNCTION redeems_before_deadline;
 
+-- The earliest session can start at 9am and the latest session (for each day) must end by 6pm,
+-- and no sessions are conducted between 12pm to 2pm
+CREATE OR REPLACE FUNCTION session_timing() ON Sessions
+RETURN TRIGGER AS $$
+BEGIN
+    IF (NEW.end_time > start_time) THEN
+        RAISE NOTICE 'End time is earlier than start time'
+        RETURN NULL;
+    ELSIF (NEW.start_time < '09:00' OR NEW.start_time > '18:00' OR (NEW.start_time >= '12:00' AND NEW.start_time < '14:00'))
+        RAISE NOTICE 'start time is out of range';
+        RETURN NULL;
+    ELSIF (NEW.end_time < '09:00' OR NEW.end_time > '18:00' OR (NEW.end_time >= '12:00' AND NEW.end_time < '14:00'))
+        RAISE NOTICE 'end time is out of range';
+        RETURN NULL;
+    ELSIF (NEW.start_time < '12:00' AND NEW.end_time > '12:00')
+        RAISE NOTICE 'session is not allowed to conduct between 12pm to 2pm';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS session_timing ON Sessions
+CREATE TRIGGER session_timing
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION session_timing;
+
+-- No two sessions for the same course offering can be conducted on the same day and at the same time.
+CREATE OR REPLACE FUNCTION same_offering_session_timing() ON Sessions
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Sessions S
+    WHERE NEW.course_id = S.course_id
+    AND NEW.launch_date = S.launch_date
+    AND NEW.start_time = S.start_time;
+    IF count > 0 THEN
+        RAISE NOTICE 'Two sessions for same course offering cannot be conducted on same day and same time!';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS same_offering_session_timing ON Sessions
+CREATE TRIGGER same_offering_session_timing
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION same_offering_session_timing;
+
+--check cancels is cancelling a legitimate register or redeem
+CREATE OR REPLACE FUNCTION cancel_legitimate_check() ON Cancels
+RETURN TRIGGER AS $$
+DECLARE
+    count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Registers R1, Redeems R2, Credit_Cards C
+    WHERE (NEW.launch_date = R1.launch_date AND NEW.course_id = R1.course_id AND NEW.cust_id = C.cust_id AND R1.number = C.number)
+    OR (NEW.launch_date = R2.launch_date AND NEW.course_id = R2.course_id AND NEW.cust_id = C.cust_id AND R2.number = C.number);
+    IF COUNT = 0 THEN
+        RAISE NOTICE 'Cancel is not cancelling a legitimate register or redeem';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS cancel_legitimate_check ON Cancels
+CREATE TRIGGER cancel_legitimate_check
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION cancel_legitimate_check;
+
+-- check session start and end time is of course duration.
+CREATE OR REPLACE FUNCTION check_session_duration ON Sessions
+RETURN TRIGGER AS $$
+BEGIN
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
+-- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+-- For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
+-- if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+CREATE OR REPLACE FUNCTION update_refund_policy() ON Cancels
+RETURN TRIGGER AS $$
+BEGIN
+    SELECT COUNT(*) INTO count
+    FROM Registers, Offerings
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 /* ---------------------- functionalities ----------------------*/
+
+--find_rooms
+CREATE OR REPLACE FUNCTION
+find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
+RETURN SETOF RECORD AS $$
+    SELECT rid
+    FROM Rooms
+    EXCEPT
+    SELECT rid
+    FROM Conducts C,
+$$ LANGUAGE plpgsql;
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
