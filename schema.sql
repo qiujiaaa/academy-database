@@ -219,7 +219,7 @@ create table Registers (
     number          text,
     date            date,
     primary key (course_id, launch_date, sid, number, date),
-    foreign key (number) references Credit_cards (number),
+    foreign key (number) references Owns (number),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
