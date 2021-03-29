@@ -303,12 +303,12 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS register_one_course_session ON Registers;
 CREATE TRIGGER register_one_course_session
-BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
+BEFORE INSERT ON Registers FOR EACH ROW
 EXECUTE FUNCTION register_one_course_session();
 
 DROP TRIGGER IF EXISTS register_one_course_session ON Redeems;
 CREATE TRIGGER register_one_course_session
-BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
+BEFORE INSERT ON Redeems FOR EACH ROW
 EXECUTE FUNCTION register_one_course_session();
 
 -- Register sessions before the offering registration deadline
@@ -689,7 +689,7 @@ $$ LANGUAGE plpgsql;
 --update_credit_card
 
 
---add_course
+--add_course (5)
 CREATE OR REPLACE FUNCTION
 add_course(newTitle TEXT, newDescription TEXT, newArea TEXT, newDuration INTEGER)
 RETURNS VOID AS $$
@@ -715,7 +715,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---find_instructors
+--find_instructors (6)
 CREATE OR REPLACE FUNCTION
 find_instructors(cid INTEGER, sessionDate DATE, sessionStartHour TIME)
 RETURNS TABLE(eid INTEGER, name TEXT) AS $$
@@ -732,7 +732,7 @@ $$ LANGUAGE sql;
 
 
 
---register_session
+--register_session (17)
 CREATE OR REPLACE FUNCTION
 register_session(cust INTEGER, cid INTEGER, cdate DATE, session INTEGER, payment TEXT)
 RETURNS VOID AS $$
@@ -788,7 +788,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---get_my_registrations
+--get_my_registrations (18)
 CREATE OR REPLACE FUNCTION
 get_my_registrations(cust INTEGER)
 RETURNS TABLE(course_name TEXT, course_fees NUMERIC, session_date DATE, session_start_hour TIME, session_duration DOUBLE PRECISION, instructor_name TEXT) AS $$
@@ -806,16 +806,39 @@ RETURNS TABLE(course_name TEXT, course_fees NUMERIC, session_date DATE, session_
     ORDER BY date, start_time;
 $$ LANGUAGE sql;
 
---update_course_session
+--update_course_session (19)
 CREATE OR REPLACE FUNCTION
 update_course_session(cust INTEGER, cid INTEGER, cdate DATE, new_session INTEGER)
 RETURNS VOID AS $$
+DECLARE
+    temp INTEGER;
+    temp_1 TEXT;
+    temp_2 TEXT;
 BEGIN
-    
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Course Offering does not exist';
+    END IF;
+    SELECT number INTO temp_1 
+    FROM Registers natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    SELECT number INTO temp_2 
+    FROM Redeems natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    IF temp_1 IS NULL AND temp_2 IS NULL THEN   
+        RAISE EXCEPTION 'Customer does not have an existing session for this course offering';
+    END IF;
+    IF temp_1 IS NOT NULL THEN
+        UPDATE Registers SET sid = new_session 
+        WHERE course_id = cid AND launch_date = cdate AND number = temp_1;
+    ELSE 
+        UPDATE Redeems SET sid = new_session 
+        WHERE course_id = cid AND launch_date = cdate AND number = temp_2;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
---cancel_registration
+--cancel_registration (20)
 
 
 --top_packages
