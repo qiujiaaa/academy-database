@@ -437,13 +437,24 @@ CREATE TRIGGER cancel_legitimate_check
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION cancel_legitimate_check;
 
--- check session start and end time is of course duration.
-CREATE OR REPLACE FUNCTION check_session_duration ON Sessions
+-- update session start and end time is of course duration.
+CREATE OR REPLACE FUNCTION check_session_duration() ON Sessions
 RETURN TRIGGER AS $$
 BEGIN
+    SELECT *
+    FROM Courses C
+    WHERE NEW.course_id = C.course_id;
+    IF (NEW.end_time <> NEW.start_time + C.duration) THEN
+        NEW.end_time := NEW.start_time + C.duration;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS check_session_duration on Sessions
+CREATE TRIGGER check_session_duration
+BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
+EXECUTE FUNCTION check_session_duration;
 
 -- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
 -- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
@@ -451,12 +462,52 @@ $$ LANGUAGE plpgsql;
 -- if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
 CREATE OR REPLACE FUNCTION update_refund_policy() ON Cancels
 RETURN TRIGGER AS $$
+DECLARE
+    count1 INTEGER;
+    count2 INTEGER;
+    register_fee NUMERIC;
+    session_date DATE;
 BEGIN
-    SELECT COUNT(*) INTO count
-    FROM Registers, Offerings
+    SELECT COUNT(*) INTO count1
+    FROM Registers R, Owns O
+    WHERE (R.launch_date = NEW.launch_date AND R.course_id = NEW.course_id AND R.sid = NEW.sid)
+    AND (O.cust_id = NEW.cust_id AND R.number = O.number);
+    SELECT COUNT(*) INTO count2
+    FROM Redeems R, Buys B, Owns O
+    WHERE (R.launch_date = NEW.launch_date AND R.course_id = NEW.course_id AND R.sid = NEW.sid)
+    AND (O.cust_id = NEW.cust_id AND R.number = B.number AND B.number = O.number);
+    SELECT date INTO session_date
+    FROM Sessions S
+    WHERE S.course_id = NEW.course_id AND S.launch_date = NEW.launch_date AND S.sid = NEW.sid;
+    SELECT fees INTO register_fee
+    FROM Offerings O
+    WHERE NEW.course_id = O.course_id AND NEW.launch_date = O.launch_date;
+    IF (count1 + count2 = 0) THEN
+        RAISE NOTICE 'Cancel is invalid!';
+        RETURN NULL;
+    ELSIF (count1 > 0) THEN --Register
+        IF (NEW.date + 7 <= session_date) THEN
+            NEW.refund_amt := register_fee;
+        ELSE
+            NEW.refund_amt := 0;
+        END IF;
+        NEW.package_credit := false;
+    ELSIF (count2 > 0) THEN --Redeems
+        IF (NEW.date + 7 <= session_date) THEN
+            NEW.package_credit := true;
+        ELSE
+            NEW.package_credit := false;
+        END IF;
+        NEW.refund_amt := 0;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_refund_policy ON Cancels
+CREATE TRIGGER update_refund_policy
+BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
+EXECUTE FUNCTION update_refund_policy;
 
 /* ---------------------- functionalities ----------------------*/
 
@@ -464,11 +515,20 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION
 find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
 RETURN SETOF RECORD AS $$
-    SELECT rid
-    FROM Rooms
-    EXCEPT
-    SELECT rid
-    FROM Conducts C,
+DECLARE
+    end_hour TIME;
+BEGIN
+    end_hour := start_hour + session_duration;
+    RETURN  SELECT rid
+            FROM Rooms
+            EXCEPT
+            SELECT C.rid
+            FROM Conducts C, Sessions S
+            WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
+            AND session_date = S.date
+            AND ((S.start_time >= start_hour AND end_hour > S.start_time)
+            OR (start_hour >= S.start_time AND S.end_time > start_hour));
+END;
 $$ LANGUAGE plpgsql;
 
 --add_employee
