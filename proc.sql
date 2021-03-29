@@ -281,6 +281,7 @@ CREATE TRIGGER offering_start_end_date
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
+-- start of jonathan functionality.
 -- For each course offered by the company, a customer can register for at most one of its sessions.
 CREATE OR REPLACE FUNCTION register_one_course_session()
 RETURNS TRIGGER AS $$
@@ -419,9 +420,9 @@ DECLARE
     count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO count
-    FROM Registers R1, Redeems R2, Credit_Cards C
-    WHERE (NEW.launch_date = R1.launch_date AND NEW.course_id = R1.course_id AND NEW.cust_id = C.cust_id AND R1.number = C.number)
-    OR (NEW.launch_date = R2.launch_date AND NEW.course_id = R2.course_id AND NEW.cust_id = C.cust_id AND R2.number = C.number);
+    FROM Registers R1, Redeems R2, Owns O
+    WHERE (NEW.launch_date = R1.launch_date AND NEW.course_id = R1.course_id AND NEW.cust_id = O.cust_id AND R1.number = O.number)
+    OR (NEW.launch_date = R2.launch_date AND NEW.course_id = R2.course_id AND NEW.cust_id = O.cust_id AND R2.number = O.number);
     IF COUNT = 0 THEN
         RAISE NOTICE 'Cancel is not cancelling a legitimate register or redeem';
         RETURN NULL;
