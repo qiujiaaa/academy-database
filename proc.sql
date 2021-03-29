@@ -398,8 +398,9 @@ BEGIN
     FROM Sessions S
     WHERE NEW.course_id = S.course_id
     AND NEW.launch_date = S.launch_date
+    AND NEW.start_time = S.start_time
+    AND NEW.date = S.date
     AND NEW.start_time = S.start_time;
-    AND NEW.date = S.date;
     IF count > 0 THEN
         RAISE NOTICE 'Two sessions for same course offering cannot be conducted on same day and same time!';
         RETURN NULL;
