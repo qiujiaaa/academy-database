@@ -464,8 +464,8 @@ $$ LANGUAGE plpgsql;
 
 --find_instructors
 CREATE OR REPLACE FUNCTION
-find_instructors(IN cid INTEGER, IN sessionDate DATE, IN sessionStartHour TIME, OUT eid INTEGER, OUT name TEXT)
-RETURNS SETOF RECORD AS $$
+find_instructors(cid INTEGER, sessionDate DATE, sessionStartHour TIME)
+RETURNS TABLE(eid INTEGER, name TEXT) AS $$
     SELECT DISTINCT eid, name 
     FROM (Employees natural join Specializes) natural join Courses 
     WHERE course_id = cid
@@ -476,3 +476,96 @@ RETURNS SETOF RECORD AS $$
     ((start_time >= (sessionStartHour - interval '1 hour') AND start_time < (sessionStartHour + interval '2 hours')) OR
     (end_time > (sessionStartHour - interval '1 hour') AND end_time <= (sessionStartHour + interval '2 hours')));
 $$ LANGUAGE sql;
+
+
+
+--register_session
+CREATE OR REPLACE FUNCTION
+register_session(cust INTEGER, cid INTEGER, cdate DATE, session INTEGER, payment TEXT)
+RETURNS VOID AS $$
+DECLARE
+    temp INTEGER;
+    today DATE;
+    cc TEXT;
+    package INTEGER;
+    package_date DATE;
+BEGIN
+    IF cust IS NULL THEN
+        RAISE EXCEPTION 'Customer ID cannot be null';
+    ELSIF cid IS NULL THEN  
+        RAISE EXCEPTION 'Course ID cannot be null';
+    ELSIF cdate IS NULL THEN
+        RAISE EXCEPTION 'Course offering launch date cannot be null';
+    ELSIF session IS NULL THEN
+        RAISE EXCEPTION 'Session number cannot be null';
+    ELSIF payment IS NULL THEN
+        RAISE EXCEPTION 'Payment cannot be null';
+    END IF;
+
+    IF payment <> 'credit card' AND payment <> 'redemption' THEN
+        RAISE EXCEPTION 'Payment method is invalid';
+    END IF;
+
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Course Offering does not exist';
+    END IF;
+    SELECT count(*) INTO temp FROM Sessions WHERE course_id = cid AND launch_date = cdate AND sid = session;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Session does not exist';
+    END IF;
+    
+    today := CURRENT_DATE;
+    IF payment = 'redemption' THEN
+        SELECT package_id, Buys.date, number INTO package, package_date, cc
+        FROM Buys natural join Owns
+        WHERE cust_id = cust AND num_remaining_redemptions > 0 LIMIT 1;
+        IF package IS NULL THEN 
+            RAISE EXCEPTION 'No active course package associated with customer';
+        ELSE 
+            INSERT INTO REDEEMS (course_id, launch_date, sid, date, package_id, number, redeems_date) VALUES (cid, cdate, session, package_date, package, cc, today);
+        END IF;
+    ELSE 
+        SELECT number INTO cc FROM Owns WHERE cust_id = cust ORDER BY from_date DESC LIMIT 1;
+        IF cc IS NULL THEN
+            RAISE EXCEPTION 'Customer does not own any credit card';
+        END IF;
+        INSERT INTO Registers (course_id, launch_date, sid, number, date) VALUES (cid, cdate, session, cc, CURRENT_DATE);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+--get_my_registrations
+CREATE OR REPLACE FUNCTION
+get_my_registrations(cust INTEGER)
+RETURNS TABLE(course_name TEXT, course_fees NUMERIC, session_date DATE, session_start_hour TIME, session_duration DOUBLE PRECISION, instructor_name TEXT) AS $$
+    WITH RegisteredSessionDetails as (
+        SELECT DISTINCT A.number, A.title, A.fees, B.date, B.start_time, DATE_PART('hour', B.end_time - B.start_time) + DATE_PART('minute', B.end_time - B.start_time)/60.0 as duration, B.name
+        FROM (Registers natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B ON A.sid = B.sid
+        WHERE B.date > '2021-03-30' or (B.date = '2021-03-30' and B.end_time > '12:00')
+        UNION
+        SELECT DISTINCT A.number, A.title, A.fees, B.date, B.start_time, DATE_PART('hour', B.end_time - B.start_time) + DATE_PART('minute', B.end_time - B.start_time)/60.0 as duration, B.name
+        FROM (Redeems natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B on A.sid = B.sid
+        WHERE B.date > '2021-03-30' or (B.date = '2021-03-30' and B.end_time > '12:00'))
+    SELECT DISTINCT title, fees, date, start_time, duration, name
+    FROM RegisteredSessionDetails JOIN Owns on RegisteredSessionDetails.number = Owns.number
+    WHERE Owns.cust_id = cust
+    ORDER BY date, start_time;
+$$ LANGUAGE sql;
+
+--update_course_session
+CREATE OR REPLACE FUNCTION
+update_course_session(cust INTEGER, cid INTEGER, cdate DATE, new_session INTEGER)
+RETURNS VOID AS $$
+BEGIN
+    
+END;
+$$ LANGUAGE plpgsql;
+
+--cancel_registration
+
+
+--top_packages
+
+
+--popular_courses
