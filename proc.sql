@@ -448,8 +448,8 @@ BEGIN
     FROM Courses C
     WHERE NEW.course_id = C.course_id;
     course_minutes := course_duration * INTERVAL '1 minute';
-    IF (NEW.end_time <> (NEW.start_time + course_duration)) THEN
-        NEW.end_time := NEW.start_time + course_duration;
+    IF (NEW.end_time <> (NEW.start_time + course_minutes)) THEN
+        NEW.end_time := NEW.start_time + course_minutes;
     END IF;
     RETURN NEW;
 END;
