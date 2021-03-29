@@ -313,7 +313,7 @@ EXECUTE FUNCTION register_one_course_session();
 
 -- Register sessions before the offering registration deadline
 CREATE OR REPLACE FUNCTION register_before_deadline()
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
 BEGIN
@@ -338,7 +338,7 @@ EXECUTE FUNCTION register_before_deadline();
 
 -- Redeems sessions before the offering registration deadline
 CREATE OR REPLACE FUNCTION redeems_before_deadline()
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
 BEGIN
@@ -364,7 +364,7 @@ EXECUTE FUNCTION redeems_before_deadline();
 -- The earliest session can start at 9am and the latest session (for each day) must end by 6pm,
 -- and no sessions are conducted between 12pm to 2pm
 CREATE OR REPLACE FUNCTION session_timing() ON Sessions
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 BEGIN
     IF (NEW.end_time > start_time) THEN
         RAISE NOTICE 'End time is earlier than start time'
@@ -415,7 +415,7 @@ EXECUTE FUNCTION same_offering_session_timing();
 
 --check cancels is cancelling a legitimate register or redeem
 CREATE OR REPLACE FUNCTION cancel_legitimate_check() ON Cancels
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
 BEGIN
@@ -439,7 +439,7 @@ EXECUTE FUNCTION cancel_legitimate_check();
 
 -- update session start and end time is of course duration.
 CREATE OR REPLACE FUNCTION check_session_duration() ON Sessions
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 BEGIN
     SELECT *
     FROM Courses C
@@ -461,7 +461,7 @@ EXECUTE FUNCTION check_session_duration();
 -- For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
 -- if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
 CREATE OR REPLACE FUNCTION update_refund_policy() ON Cancels
-RETURN TRIGGER AS $$
+RETURNS TRIGGER AS $$
 DECLARE
     count1 INTEGER;
     count2 INTEGER;
