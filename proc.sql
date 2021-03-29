@@ -476,3 +476,106 @@ RETURNS SETOF RECORD AS $$
     ((start_time >= (sessionStartHour - interval '1 hour') AND start_time < (sessionStartHour + interval '2 hours')) OR
     (end_time > (sessionStartHour - interval '1 hour') AND end_time <= (sessionStartHour + interval '2 hours')));
 $$ LANGUAGE sql;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--update_instructor
+CREATE OR REPLACE FUNCTION 
+update_instructor(cid INTEGER, sess_id INTEGER, new_eid INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    instr_count INTEGER;
+    conducts_count INTEGER;
+    today DATE;
+    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND sess_id = sid);
+    r RECORD;
+BEGIN
+    SELECT COUNT(*) FROM Instructors WHERE eid = new_eid INTO instr_count;
+    IF instr_count = 0 THEN
+        RAISE EXCEPTION 'eid does not exists';
+        RETURN;
+    ELSE 
+        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND sess_id = sid INTO conducts_count;
+        IF conducts_count = 0 THEN
+            RAISE EXCEPTION 'This session does not exists';
+            RETURN;
+        ELSE
+            SELECT CURRENT_DATE INTO today;
+            OPEN curs;
+            FETCH curs INTO r;
+            IF r.launch_date < today THEN
+                RAISE EXCEPTION 'Session has already launched, cannot change instructor';
+                RETURN;
+            ELSE
+                UPDATE Conducts SET eid = new_eid WHERE course_id = cid AND sess_id = sid;
+            END IF;
+            CLOSE curs;
+        END IF;
+    END IF;
+END
+$$ LANGUAGE plpgsql;
+
+--update_room
+CREATE OR REPLACE FUNCTION update_room(cid INTEGER, sess_id INTEGER, new_rid INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    room_count INTEGER;
+    conducts_count INTEGER;
+    today DATE;
+    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND sess_id = sid);
+    r RECORD;
+    seat_cap INTEGER;
+    no_of_reg INTEGER;
+BEGIN
+    SELECT COUNT(*) FROM Rooms WHERE rid = new_rid into room_count;
+    IF room_count = 0 THEN --Room does not exists
+        RAISE EXCEPTION 'Room does not exists';
+        RETURN;
+    ELSE
+        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND sess_id = sid INTO conducts_count;
+        IF conducts_count = 0 THEN --Session does not exists
+            RAISE EXCEPTION 'This session does not exists';
+            RETURN;
+        ELSE
+            SELECT CURRENT_DATE INTO today;
+            OPEN curs;
+            FETCH curs INTO r;
+            IF r.launch_date < today THEN --Session alr launched
+                RAISE EXCEPTION 'Session has already launched, cannot change room';
+                RETURN;
+            ELSE
+                SELECT seating_capacity FROM Rooms WHERE rid = new_rid INTO seat_cap;
+                SELECT COUNT(*) FROM Registers WHERE course_id = cid AND sess_id = sid INTO no_of_reg;
+                IF no_of_reg > seat_cap THEN --No of Reg > Seat Cap
+                    RAISE EXCEPTION 'Number of registration for this session exceeds the seating capacity of new room';
+                    RETURN;
+                ELSE
+                    UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND sess_id = sid;
+                END IF;
+            END IF;
+            CLOSE curs;
+        END IF;
+    END IF;
+END             
+$$ LANGUAGE plpgsql;
