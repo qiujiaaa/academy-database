@@ -516,7 +516,9 @@ EXECUTE FUNCTION update_refund_policy();
 
 /* ---------------------- functionalities ----------------------*/
 
---find_rooms
+-- 7 get_available_instructors
+
+-- 8 find_rooms
 CREATE OR REPLACE FUNCTION
 find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
 RETURNS TABLE(rid INT) AS $$
@@ -524,17 +526,102 @@ DECLARE
     end_hour TIME;
 BEGIN
     end_hour := start_hour + session_duration;
-      SELECT rid
-            FROM Rooms
-            EXCEPT
-            SELECT C.rid
-            FROM Conducts C, Sessions S
-            WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
-            AND session_date = S.date
-            AND ((S.start_time >= start_hour AND end_hour > S.start_time)
-            OR (start_hour >= S.start_time AND S.end_time > start_hour));
+    SELECT rid
+    FROM Rooms
+    EXCEPT
+    SELECT C.rid
+    FROM Conducts C, Sessions S
+    WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
+    AND session_date = S.date
+    AND ((S.start_time >= start_hour AND end_hour > S.start_time)
+    OR (start_hour >= S.start_time AND S.end_time > start_hour));
 END;
 $$ LANGUAGE plpgsql;
+
+-- 13 buy_course_package
+CREATE OR REPLACE FUNCTION
+buy_course_package(customer_id INT, course_package_id INT)
+RETURNS VOID AS $$
+DECLARE
+    cust_count INTEGER;
+    package_count INTEGER;
+    cc_number TEXT;
+    date_range INT;
+    start_date DATE;
+    end_date DATE;
+BEGIN
+    SELECT Count(*) INTO cust_count
+    FROM Customers C
+    WHERE C.cust_id = customer_id;
+    SELECT Count(*) INTO package_count
+    FROM Course_packages C
+    WHERE C.package_id = course_package_id;
+    IF (cust_count = 0) THEN
+        RAISE EXCEPTION 'Invalid customer id!';
+    ELSIF (package_count = 0) THEN
+        RAISE EXCEPTION 'Invalid course package id!';
+    END IF;
+    SELECT number INTO cc_number FROM Owns WHERE Owns.cust_id = customer_id LIMIT 1;
+    SELECT sale_start_date INTO start_date FROM Course_packages C WHERE C.package_id = course_package_id;
+    SELECT sale_end_date INTO end_date FROM Course_packages C WHERE C.package_id = course_package_id;
+    date_range := end_date - start_date;
+    -- buy package by inserting a record into Buys with a random date between
+    -- sale starting date and sale ending date of package
+    INSERT INTO Buys (date, num_remaining_redemptions, package_id, number) VALUES
+    (start_date + random_between(1, date_range), 1, course_package_id, cc_number);
+END;
+$$ LANGUAGE plpgsql;
+
+-- 14 get_my_course_package
+--CREATE OR REPLACE FUNCTION
+--get_my_course_package(customer_id INT)
+--RETURNS SETOF JSON AS $$
+--DECLARE
+--BEGIN
+--    create table of Buys that has been brought by cust_id.
+--    CREATE OR REPLACE VIEW B1 AS
+--    SELECT B.date, B.num_remaining_redemptions, B.package_id, B.number
+--    FROM Buys B, Owns O
+--    WHERE O.cust_id = customer_id
+--    AND O.number = B.number;
+--
+--    CREATE OR REPLACE VIEW T1 AS
+--    SELECT C.name, B.date, C.price, C.num_free_registrations, B.num_remaining_redemptions
+--    FROM Buys B, Course_packages C, Owns O,
+--    WHERE (O.cust_id = customer_id AND B.number = O.number)
+--    AND C.package_id = B.package_id;
+--
+--    SELECT row_to_json(
+--        ROW(T1.*
+--        ROW(S.date))
+--    )
+--    FROM Buys B
+--
+----package name (Course_packages)
+----purchase date (Buys)
+----price of pacakge (Course_packages)
+----number of free sessions (Course_packages)
+----num_remain_redemption (Buys)
+---- row values (redeemed)
+--END;
+--$$ LANGUAGE plpgsql;
+
+-- 15 get_available_course_offerings
+CREATE OR REPLACE FUNCTION
+get_available_course_offerings()
+RETURNS SETOF RECORD AS $$
+BEGIN
+    SELECT C.title, C.course_area, O.start_date, O.end_date, O.registration_deadline, O.fees, O.seating_capacity
+    FROM Courses C, Offerings O
+    WHERE C.course_id = O.course_id
+    AND O.seating_capacity <> 0
+    ORDER BY O.registration_deadline ASC, C.title ASC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 16 get_available_course_sessions
+
+-- 26 promote courses
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
