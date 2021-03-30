@@ -628,6 +628,7 @@ DECLARE
     deadline DATE;
     offering_start DATE;
     offering_end DATE;
+    dur INTEGER;
 BEGIN
     SELECT CURRENT_DATE INTO today;
     SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO deadline;
@@ -649,8 +650,10 @@ BEGIN
             UPDATE Offerings SET end_date = new_date WHERE course_id = cid AND l_date = launch_date;
         END IF;
         
-        --end_time is null as it is not given
-        INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, null, new_date);
+        --get duration from Courses table
+        SELECT duration FROM Courses WHERE cid = course_id INTO dur; 
+        
+        INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
         INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
     END IF;
 END
@@ -678,11 +681,6 @@ $$ LANGUAGE plpgsql;
 
 
 --view_summary_report
---SELECT * FROM table
---WHERE YEAR(date_created) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
---AND MONTH(date_created) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
---DATE_PART('month', current_date - '0 month'::INTERVAL);
---CONCAT(counter::TEXT, ' month');
 CREATE OR REPLACE FUNCTION view_summary_report(n INTEGER)
 RETURNS TABLE(mth INTEGER, yr INTEGER, salary_paid INTEGER, sales_of_cpkg INTEGER, reg_fee_cc INTEGER, refund_fees INTEGER, creg_cpkg INTEGER) AS $$
 BEGIN
@@ -756,11 +754,178 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-
-
-
-
-
-
-
-
+--view_manager_report
+CREATE OR REPLACE FUNCTION view_manager_report()
+RETURNS TABLE(mngr_name TEXT, c_area INTEGER, co_ended INTEGER, net_fees INTEGER, c_title TEXT) AS $$
+DECLARE
+    curs CURSOR FOR (SELECT * FROM Managers M, Employees E WHERE M.eid = E.eid ORDER BY name);
+    r RECORD;
+    
+    total_cc INTEGER;
+    total_cp INTEGER;
+    total_refunded INTEGER;
+    
+    refcurs REFCURSOR;
+    r_title RECORD;
+    
+    title_cc INTEGER;
+    title_cp INTEGER;
+    title_refunded INTEGER;
+    
+    title_max INTEGER;
+    title_temp INTEGER;
+BEGIN
+    OPEN curs;
+    LOOP
+        FETCH curs INTO r;
+        EXIT WHEN NOT FOUND;        
+        
+        --manager name
+        mngr_name := r.name;
+        
+        --total number of course area managed by manager
+        SELECT COUNT(*)
+        FROM Course_areas C
+        WHERE C.eid = r.eid
+        INTO c_area;
+        
+        --total number of offerings that ended this year that are managed by manager
+        SELECT COUNT(*)
+        FROM Course_areas CA, Courses C, Offerings O
+        WHERE CA.eid = r.eid
+        AND CA.name = C.course_area
+        AND C.course_id = O.course_id
+        AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+        INTO co_ended;
+        
+        --total net registration fees for all course offerings that ended this year
+        --paid via credit card
+        SELECT SUM(O.fees)
+        FROM Course_areas CA, Courses C, Offerings O, Registers Reg
+        WHERE CA.eid = r.eid
+        AND CA.name = C.course_area
+        AND C.course_id = O.course_id
+        AND O.course_id = Reg.course_id
+        AND O.launch_date = Reg.launch_date
+        AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+        INTO total_cc;
+        
+        IF total_cc IS NULL THEN
+            total_cc := 0;
+        END IF;
+        
+        --paid via course package
+        SELECT SUM(ROUND(CP.price / CP.num_free_registrations))
+        FROM Course_areas CA, Courses C, Offerings O, Redeems Re, Course_packages CP
+        WHERE CA.eid = r.eid
+        AND CA.name = C.course_area
+        AND C.course_id = O.course_id
+        AND O.course_id = Re.course_id
+        AND O.launch_date = Re.launch_date
+        AND Re.package_id = CP.package_id
+        AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+        INTO total_cp;
+        
+        IF total_cp IS NULL THEN
+            total_cp := 0;
+        END IF;
+        
+        --amount refunded
+        SELECT SUM(Canc.refund_amt)
+        FROM Course_areas CA, Courses C, Offerings O, Cancels Canc
+        WHERE CA.eid = r.eid
+        AND CA.name = C.course_area
+        AND C.course_id = O.course_id
+        AND O.course_id = Canc.course_id
+        AND O.launch_date = Canc.launch_date
+        AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+        INTO total_refunded;
+        
+        IF total_refunded IS NULL THEN
+            total_refunded := 0;
+        END IF;
+        
+        net_fees := total_cc + total_cp - total_refunded;
+        
+        --course title that has highest total net registration fees
+        OPEN refcurs FOR
+        SELECT DISTINCT(C.title) AS title --rows of course_title that ended this year
+        FROM Course_areas CA, Courses C, Offerings o
+        WHERE CA.eid = r.eid
+        AND CA.name = C.course_area
+        AND C.course_id = O.course_id
+        AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE);
+        
+        title_max := -2147483648;
+        c_title := '';
+        
+        LOOP
+            FETCH refcurs INTO r_title;
+            EXIT WHEN NOT FOUND;
+            --paid via credit card
+            SELECT SUM(O.fees)
+            FROM Course_areas CA, Courses C, Offerings O, Registers Reg
+            WHERE CA.eid = r.eid
+            AND CA.name = C.course_area
+            AND C.title = r_title.title
+            AND C.course_id = O.course_id
+            AND O.course_id = Reg.course_id
+            AND O.launch_date = Reg.launch_date
+            AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+            INTO title_cc;
+            
+            IF title_cc IS NULL THEN
+                title_cc := 0;
+            END IF;
+            
+            --paid via course package
+            SELECT SUM(ROUND(CP.price / CP.num_free_registrations))
+            FROM Course_areas CA, Courses C, Offerings O, Redeems Re, Course_packages CP
+            WHERE CA.eid = r.eid
+            AND CA.name = C.course_area
+            AND C.title = r_title.title
+            AND C.course_id = O.course_id
+            AND O.course_id = Re.course_id
+            AND O.launch_date = Re.launch_date
+            AND Re.package_id = CP.package_id
+            AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+            INTO title_cp;
+            
+            IF title_cp IS NULL THEN
+                title_cp := 0;
+            END IF;
+            
+            --amount refunded
+            SELECT SUM(Canc.refund_amt)
+            FROM Course_areas CA, Courses C, Offerings O, Cancels Canc
+            WHERE CA.eid = r.eid
+            AND CA.name = C.course_area
+            AND C.title = r_title.title
+            AND C.course_id = O.course_id
+            AND O.course_id = Canc.course_id
+            AND O.launch_date = Canc.launch_date
+            AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
+            INTO title_refunded;
+            
+            IF title_refunded IS NULL THEN
+                title_refunded := 0;
+            END IF;
+            
+            title_temp := title_cc + title_cp - title_refunded;
+            
+            IF title_temp > title_max THEN
+                title_max := title_temp;
+                c_title := r_title.title;
+            ELSIF title_temp = title_max THEN
+                c_title := CONCAT(c_title, ', ', r_title.title);
+            END IF;
+            
+        END LOOP;
+        CLOSE refcurs;
+        
+        RETURN NEXT;
+        
+    END LOOP;
+    CLOSE curs;
+END
+$$ LANGUAGE plpgsql;
