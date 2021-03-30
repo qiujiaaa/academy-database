@@ -516,26 +516,6 @@ EXECUTE FUNCTION update_refund_policy();
 
 /* ---------------------- functionalities ----------------------*/
 
---find_rooms
-CREATE OR REPLACE FUNCTION
-find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
-RETURNS TABLE(rid INT) AS $$
-DECLARE
-    end_hour TIME;
-BEGIN
-    end_hour := start_hour + session_duration;
-      SELECT rid
-            FROM Rooms
-            EXCEPT
-            SELECT C.rid
-            FROM Conducts C, Sessions S
-            WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
-            AND session_date = S.date
-            AND ((S.start_time >= start_hour AND end_hour > S.start_time)
-            OR (start_hour >= S.start_time AND S.end_time > start_hour));
-END;
-$$ LANGUAGE plpgsql;
-
 --add_employee
 CREATE OR REPLACE FUNCTION 
 add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, emp_cat TEXT, salary INTEGER, join_date DATE,  course_area TEXT[])
@@ -731,27 +711,53 @@ RETURNS SETOF RECORD AS $$
 $$ LANGUAGE sql;
 
 
+--get_available_instructors
 
 
 
+--find_rooms
+CREATE OR REPLACE FUNCTION
+find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
+RETURNS TABLE(rid INT) AS $$
+DECLARE
+    end_hour TIME;
+BEGIN
+    end_hour := start_hour + session_duration;
+      SELECT rid
+            FROM Rooms
+            EXCEPT
+            SELECT C.rid
+            FROM Conducts C, Sessions S
+            WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
+            AND session_date = S.date
+            AND ((S.start_time >= start_hour AND end_hour > S.start_time)
+            OR (start_hour >= S.start_time AND S.end_time > start_hour));
+END;
+$$ LANGUAGE plpgsql;
 
+--get_available_rooms
 
+--add_course_offering
 
+--add_course_package
 
+--get_available_course_package
 
+--buy_course_package
 
+--get_my_course_package
 
+--get_available_course_offerings
 
+--get_available_course_sessions
 
+--register_session
 
+--get_my_registrations
 
+--update_course_session
 
-
-
-
-
-
-
+--cancel_registration
 
 --update_instructor
 --course offerings identifier is (course_id, launch_date)
@@ -912,26 +918,13 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+--pay_salary
 
+--promote_courses
 
+--top_packages
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--popular courses
 
 --view_summary_report
 CREATE OR REPLACE FUNCTION view_summary_report(n INTEGER)
