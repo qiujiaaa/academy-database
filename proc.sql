@@ -906,7 +906,51 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---top_packages
+--top_packages (27)
+CREATE OR REPLACE FUNCTION
+top_packages(n INTEGER)
+RETURNS TABLE(package_id INTEGER, free_sessions INTEGER, price INTEGER, start_date DATE, end_date DATE, quantity_sold BIGINT) AS $$
+    WITH PopularCourses as (
+        SELECT DISTINCT package_id, num_free_registrations, price, sale_start_date, sale_end_date, count(*) as quantity
+        FROM Course_packages NATURAL JOIN Buys
+        WHERE DATE_PART('year', CURRENT_DATE) = DATE_PART('year', sale_start_date)
+        GROUP BY package_id
+        ORDER BY count(*) DESC),
+    TopNCourses as (
+        (SELECT * FROM PopularCourses LIMIT n)
+        UNION
+        SELECT * FROM PopularCourses
+        WHERE quantity = (SELECT quantity FROM PopularCourses OFFSET (n-1) LIMIT 1))
+    SELECT * FROM TopNCourses ORDER BY quantity DESC, price DESC;
+$$ LANGUAGE sql;
 
-
---popular_courses
+--popular_courses (28)
+CREATE OR REPLACE FUNCTION
+popular_courses()
+RETURNS TABLE(course_id INTEGER, course_title TEXT, course_area TEXT, num_offerings BIGINT, registrations INTEGER) AS $$
+    WITH A as (
+        SELECT course_id, launch_date, start_date, title, course_area 
+        FROM (Offerings NATURAL JOIN Courses) O1
+        WHERE 
+        --DATE_PART('year', CURRENT_DATE) = DATE_PART('year', start_date) AND 
+            2 <= (SELECT COUNT(*) FROM Offerings NATURAL JOIN Courses WHERE O1.course_id = course_id)),
+    B as (
+        SELECT course_id, launch_date, start_date FROM Registers NATURAL JOIN Offerings 
+        UNION ALL
+        SELECT course_id, launch_date, start_date FROM Redeems NATURAL JOIN Offerings),
+    C as (
+        SELECT course_id, launch_date, start_date, count(*) as registrations
+        FROM B GROUP BY course_id, launch_date, start_date),
+    OfferingRegistrations as (
+        SELECT * FROM A NATURAL LEFT JOIN C),
+    InvalidCourses as (
+        SELECT DISTINCT O1.course_id 
+        FROM OfferingRegistrations O1, OfferingRegistrations O2
+        WHERE O1.course_id = O2.course_id AND O1.start_date > O2.start_date AND 
+            O1.registrations <= O2.registrations
+    )
+    SELECT DISTINCT course_id, title, course_area FROM OfferingRegistrations O
+    WHERE not exists (
+        SELECT 1 FROM InvalidCourses I WHERE I.course_id = O.course_id
+        );
+$$ LANGUAGE sql;
