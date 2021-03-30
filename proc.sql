@@ -282,6 +282,34 @@ BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
 -- start of jonathan functionality.
+--check an instructor who is assigned to teach a course session must be specialized in that course area
+CREATE OR REPLACE FUNCTION teacher_specialized()
+RETURNS TRIGGER AS $$
+DECLARE
+    course_course_area TEXT;
+    count INTEGER;
+BEGIN
+    SELECT course_area INTO course_course_area
+    FROM Courses
+    WHERE Courses.course_id = NEW.course_id;
+    SELECT Count(*) INTO count
+    FROM Specializes S
+    WHERE NEW.eid = S.eid
+    AND S.course_area = course_area_area;
+    IF (count = 0) THEN
+        RAISE NOTICE 'Instructor is not specialized to conduct the session!';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS teacher_specialized ON Conducts
+CREATE TRIGGER teacher_specialized
+BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
+EXECUTE FUNCTION teacher_specialized();
+
 -- For each course offered by the company, a customer can register for at most one of its sessions.
 CREATE OR REPLACE FUNCTION register_one_course_session()
 RETURNS TRIGGER AS $$
@@ -517,6 +545,30 @@ EXECUTE FUNCTION update_refund_policy();
 /* ---------------------- functionalities ----------------------*/
 
 -- 7 get_available_instructors
+--This routine is used to retrieve the availability information of instructors who could be assigned to teach a specified course.
+--The inputs to the routine include the following: course identifier, start date, and end date. The routine returns a table of
+--records consisting of the following information: employee identifier, name, total number of teaching hours that the instructor
+--has been assigned for this month, day (which is within the input date range [start date, end date]), and an array of
+--the available hours for the instructor on the specified day. The output is sorted in ascending order of employee identifier and day,
+--and the array entries are sorted in ascending order of hour.
+CREATE OR REPLACE FUNCTION
+get_available_instructors(course_id INT, start_date DATE, end_date DATE)
+RETURNS VOID AS $$
+DECLARE
+    course_area TEXT;
+BEGIN
+    SELECT course_area INTO course_area
+    FROM Courses C
+    WHERE C.course_id = course_id;
+    IF COALESCE(course_area, ' ') = ' ' THEN
+        RAISE EXCEPTION 'Invalid course_id inputted in this function';
+    END IF;
+    -- find eid, with eid
+    -- find total teaching hours this month
+    -- start date to end date,
+    -- array of available hours.
+END;
+$$ LANGUAGE plpgsql;
 
 -- 8 find_rooms
 CREATE OR REPLACE FUNCTION
@@ -606,10 +658,11 @@ $$ LANGUAGE plpgsql;
 --END;
 --$$ LANGUAGE plpgsql;
 
--- 15 get_available_course_offerings
+-- 15 get_available_course_offerings (remaining seat not updated)
 CREATE OR REPLACE FUNCTION
 get_available_course_offerings()
 RETURNS SETOF RECORD AS $$
+DECLARE
 BEGIN
     SELECT C.title, C.course_area, O.start_date, O.end_date, O.registration_deadline, O.fees, O.seating_capacity
     FROM Courses C, Offerings O
@@ -620,8 +673,34 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 16 get_available_course_sessions
+CREATE OR REPLACE FUNCTION
+get_available_course_sessions()
+RETURNS VOID AS $$
+BEGIN
+    CREATE VIEW OR REPLACE R1 AS
+    SELECT R.course_id, R.launch_date, R.sid, count(*) AS redeem_count
+    FROM Redeems R, Sessions S
+    WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
+    GROUP BY R.course_id, R.launch_date, R.sid;
+    CREATE VIEW OR REPLACE R2 AS
+    SELECT R.course_id, R.launch_date, R.sid, count(*) AS register_count
+    FROM Registers R, Sessions S
+    WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
+    GROUP BY R.course_id, R.launch_date, R.sid;
+END;
+$$ LANGUAGE plpgsql;
 
 -- 26 promote courses
+-- This routine is used to identify potential course offerings that could be of interest to inactive customers.
+-- A customer is classified as an active customer if the customer has registered for some course offering in the last six months
+-- (inclusive of the current month); otherwise, the customer is considered to be inactive customer. A course area A
+-- is of interest to a customer C if there is some course offering in area A among the three most recent course offerings registered by C.
+-- If a customer has not yet registered for any course offering, we assume that every course area is of interest to that customer.
+-- The routine returns a table of records consisting of the following information for each inactive customer:
+-- customer identifier, customer name, course area A that is of interest to the customer,
+-- course identifier of a course C in area A, course title of C, launch date of course offering of course C that still accepts registrations,
+-- course offering’s registration deadline, and fees for the course offering.
+-- The output is sorted in ascending order of customer identifier and course offering’s registration deadline.
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
