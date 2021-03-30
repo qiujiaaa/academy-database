@@ -305,7 +305,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS teacher_specialized ON Conducts
+DROP TRIGGER IF EXISTS teacher_specialized ON Conducts;
 CREATE TRIGGER teacher_specialized
 BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
 EXECUTE FUNCTION teacher_specialized();
@@ -677,12 +677,12 @@ CREATE OR REPLACE FUNCTION
 get_available_course_sessions()
 RETURNS VOID AS $$
 BEGIN
-    CREATE VIEW OR REPLACE R1 AS
+    CREATE OR REPLACE VIEW R1 AS
     SELECT R.course_id, R.launch_date, R.sid, count(*) AS redeem_count
     FROM Redeems R, Sessions S
     WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
     GROUP BY R.course_id, R.launch_date, R.sid;
-    CREATE VIEW OR REPLACE R2 AS
+    CREATE OR REPLACE VIEW R2 AS
     SELECT R.course_id, R.launch_date, R.sid, count(*) AS register_count
     FROM Registers R, Sessions S
     WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
