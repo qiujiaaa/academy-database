@@ -295,7 +295,7 @@ BEGIN
     SELECT Count(*) INTO count
     FROM Specializes S
     WHERE NEW.eid = S.eid
-    AND S.course_area = course_area_area;
+    AND S.course_area = course_course_area;
     IF (count = 0) THEN
         RAISE NOTICE 'Instructor is not specialized to conduct the session!';
         RETURN NULL;
