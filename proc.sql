@@ -925,6 +925,7 @@ RETURNS TABLE(package_id INTEGER, free_sessions INTEGER, price INTEGER, start_da
 $$ LANGUAGE sql;
 
 --popular_courses (28)
+/*
 CREATE OR REPLACE FUNCTION
 popular_courses()
 RETURNS TABLE(course_id INTEGER, course_title TEXT, course_area TEXT, num_offerings BIGINT, registrations INTEGER) AS $$
@@ -954,3 +955,4 @@ RETURNS TABLE(course_id INTEGER, course_title TEXT, course_area TEXT, num_offeri
         SELECT 1 FROM InvalidCourses I WHERE I.course_id = O.course_id
         );
 $$ LANGUAGE sql;
+*/
