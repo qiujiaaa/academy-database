@@ -994,7 +994,6 @@ BEGIN
             RETURN;
         ELSE
             SELECT CURRENT_DATE INTO today;
-            SELECT CURRENT_DATE INTO today;
             SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
             --Session alr launched
             IF sess_date < today THEN 
@@ -1022,9 +1021,8 @@ CREATE OR REPLACE FUNCTION remove_session(cid INTEGER, l_date DATE, sess_id INTE
 RETURNS VOID AS $$
 DECLARE
     sess_count INTEGER;
-    curs CURSOR FOR (SELECT * FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid);
-    r RECORD;
     today DATE;
+    sess_date DATE;
     regist_count INTEGER;
 BEGIN
     SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_count;
@@ -1033,9 +1031,8 @@ BEGIN
         RETURN;
     ELSE
         SELECT CURRENT_DATE INTO today;
-        OPEN curs;
-        FETCH curs into r;
-        IF r.launch_date < today THEN
+        SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
+        IF sess_date < today THEN
             RAISE EXCEPTION 'Session has already launched, cannot remove session';
             RETURN;
         ELSE
@@ -1044,10 +1041,10 @@ BEGIN
                 RAISE EXCEPTION 'There is at least one registration for the session';
                 RETURN;
             ELSE
+                DELETE FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 DELETE FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
             END IF;
         END IF;
-        CLOSE curs;
     END IF;
 END
 $$ LANGUAGE plpgsql;
@@ -1062,7 +1059,11 @@ DECLARE
     deadline DATE;
     offering_start DATE;
     offering_end DATE;
+    offering_reg DATE;
     dur INTEGER;
+    sess_count INTEGER;
+    area TEXT;
+    area_count INTEGER;
 BEGIN
     SELECT CURRENT_DATE INTO today;
     SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO deadline;
@@ -1070,25 +1071,47 @@ BEGIN
         RAISE EXCEPTION 'Course offerings registration deadline passed';
         RETURN;
     ELSE
-        SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_start;
-        SELECT end_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_end;
-        
-        --update if new session date is earlier than offering start date
-        IF offering_start > new_date THEN 
-            --what will happen if new_date is earlier than resgistration date?
-            UPDATE Offerings SET start_date = new_date WHERE course_id = cid AND l_date = launch_date;
+        --sid already exists
+        SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sid = new_sid into sess_count;
+        IF sess_count <> 0 THEN
+            RAISE EXCEPTION 'Session number already exists';
+            RETURN;
+        ELSE 
+            SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_start;
+            SELECT end_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_end;
+            SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_reg;
+            
+            --Session date is earlier than offering's registration deadline
+            IF new_date < offering_reg THEN
+                RAISE EXCEPTION 'Session date is earlier than registration deadline';
+                RETURN;
+            ELSE 
+                --check that intructor is specialize in that area
+                SELECT course_area FROM Courses WHERE course_id = cid INTO area;
+                SELECT COUNT(*) FROM Specializes WHERE eid = instr_id AND area = course_area INTO area_count;
+                
+                IF area_count = 0 THEN
+                    RAISE EXCEPTION 'Instructor is not specialize in this course_area';
+                    RETURN;
+                ELSE 
+                    --update if new session date is earlier than offering start date
+                    IF offering_start > new_date THEN 
+                        UPDATE Offerings SET start_date = new_date WHERE course_id = cid AND l_date = launch_date;
+                    END IF;
+                    
+                    --update if new session date is later than offering end date
+                    IF offering_end < new_date THEN
+                        UPDATE Offerings SET end_date = new_date WHERE course_id = cid AND l_date = launch_date;
+                    END IF;
+                    
+                    --get duration from Courses table
+                    SELECT duration FROM Courses WHERE cid = course_id INTO dur; 
+                    
+                    INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
+                    INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
+                END IF;
+            END IF;
         END IF;
-        
-        --update if new session date is later than offering end date
-        IF offering_end < new_date THEN
-            UPDATE Offerings SET end_date = new_date WHERE course_id = cid AND l_date = launch_date;
-        END IF;
-        
-        --get duration from Courses table
-        SELECT duration FROM Courses WHERE cid = course_id INTO dur; 
-        
-        INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
-        INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
     END IF;
 END
 $$ LANGUAGE plpgsql;
