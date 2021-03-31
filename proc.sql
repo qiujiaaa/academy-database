@@ -543,7 +543,7 @@ BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
 EXECUTE FUNCTION update_refund_policy();
 
 /* ---------------------- functionalities ----------------------*/
-DROP FUNCTION IF EXISTS
+DROP FUNCTION IF EXISTS get_available_course_sessions();
 -- 7 get_available_instructors
 --This routine is used to retrieve the availability information of instructors who could be assigned to teach a specified course.
 --The inputs to the routine include the following: course identifier, start date, and end date. The routine returns a table of
@@ -661,13 +661,35 @@ $$ LANGUAGE plpgsql;
 -- 15 get_available_course_offerings (remaining seat not updated)
 CREATE OR REPLACE FUNCTION
 get_available_course_offerings()
-RETURNS SETOF RECORD AS $$
-DECLARE
+RETURNS TABLE(course_title TEXT, course_area TEXT, start_date DATE, end_date DATE, registration_deadline DATE, course_fees NUMERIC, remaining_seat INTEGER) $$
 BEGIN
-    SELECT C.title, C.course_area, O.start_date, O.end_date, O.registration_deadline, O.fees, O.seating_capacity
-    FROM Courses C, Offerings O
-    WHERE C.course_id = O.course_id
-    AND O.seating_capacity <> 0
+    --get count of course offerings for redeems
+    CREATE OR REPLACE VIEW R1 AS
+    SELECT R.course_id, R.launch_date, count(*) AS redeem_count
+    FROM Redeems R
+    GROUP BY R.course_id, R.launch_date;
+    --get count of course offerings for registers
+    CREATE OR REPLACE VIEW R2 AS
+    SELECT R.course_id, R.launch_date, count(*) AS register_count
+    FROM Registers R
+    GROUP BY R.course_id, R.launch_date;
+    --get seating capacity of course offerings
+    CREATE OR REPLACE VIEW R3 AS
+    SELECT O.course_id, O.launch_date, O.seating_capacity;
+    FROM Offerings O;
+    --natural full outer join R1, R2, R3
+    CREATE OR REPLACE VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR REPLACE VIEW R5 AS
+    SELECT course_id, launch_date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
+    FROM R4;
+
+    --return table query.
+    RETURN QUERY
+    SELECT C.title, C.course_area, O.start_date, O.end_date, O.registration_deadline, O.fees, CAST(R.remaining_seat AS INTEGER)
+    FROM Courses C, Offerings O, R5 R
+    WHERE (C.course_id = R.course_id AND C.launch_date = R.launch_date)
+    AND C.course_id = O.course_id
+    AND R.remaining_seat > 0
     ORDER BY O.registration_deadline ASC, C.title ASC;
 END;
 $$ LANGUAGE plpgsql;
@@ -707,6 +729,7 @@ BEGIN
     WHERE (S.launch_date = R.launch_date AND S.course_id = R.course_id AND S.sid = R.sid)
     AND (S.launch_date = C.launch_date AND S.course_id = C.course_id AND S.sid = C.sid)
     AND C.eid = E.eid
+    AND R.remaining_seat > 0
     ORDER BY S.date ASC, S.start_time ASC;
 END;
 $$ LANGUAGE plpgsql;
