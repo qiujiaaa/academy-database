@@ -678,7 +678,7 @@ BEGIN
     SELECT O.course_id, O.launch_date, O.seating_capacity
     FROM Offerings O;
     --natural full outer join R1, R2, R3
-    CREATE OR REPLACE VIEW R154 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR REPLACE VIEW R154 AS SELECT * FROM (R151 natural full outer join R152) AS R1512 natural full outer join R153;
     CREATE OR REPLACE VIEW R155 AS
     SELECT course_id, launch_date, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
     FROM R164;
@@ -717,7 +717,7 @@ BEGIN
     FROM Conducts C, Rooms R
     WHERE R.rid = C.rid;
     --natural full outer join R1, R2, R3
-    CREATE OR REPLACE VIEW R164 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR REPLACE VIEW R164 AS SELECT * FROM (R161 natural full outer join R162) AS R1612 natural full outer join R163;
     CREATE OR REPLACE VIEW R165 AS
     SELECT course_id, launch_date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
     FROM R164;
