@@ -768,29 +768,39 @@ DECLARE
     instr_count INTEGER;
     conducts_count INTEGER;
     today DATE;
-    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid);
-    r RECORD;
+    sess_date DATE;
+    area TEXT;
+    area_count INTEGER;
 BEGIN
     SELECT COUNT(*) FROM Instructors WHERE eid = new_eid INTO instr_count;
+    --instructor does not exists
     IF instr_count = 0 THEN
-        RAISE EXCEPTION 'eid does not exists';
+        RAISE EXCEPTION 'Instructor does not exists';
         RETURN;
     ELSE 
         SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO conducts_count;
+        --Session does not exists
         IF conducts_count = 0 THEN
             RAISE EXCEPTION 'This session does not exists';
             RETURN;
         ELSE
             SELECT CURRENT_DATE INTO today;
-            OPEN curs;
-            FETCH curs INTO r;
-            IF r.launch_date < today THEN
+            SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
+            --session alr launched
+            IF sess_date < today THEN
                 RAISE EXCEPTION 'Session has already launched, cannot change instructor';
                 RETURN;
             ELSE
-                UPDATE Conducts SET eid = new_eid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+                --instructor not specialize in that area
+                SELECT course_area FROM Courses WHERE cid = course_id into area;
+                SELECT COUNT(*) FROM Specializes WHERE new_eid = eid AND area = course_area INTO area_count;
+                IF area_count = 0 THEN
+                    RAISE EXCEPTION 'New instructor is not specializes in this course area';
+                    RETURN;
+                ELSE
+                    UPDATE Conducts SET eid = new_eid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+                END IF;
             END IF;
-            CLOSE curs;
         END IF;
     END IF;
 END
@@ -798,44 +808,46 @@ $$ LANGUAGE plpgsql;
 
 --update_room
 --course offerings identifier is (course_id, launch_date)
-CREATE OR REPLACE FUNCTION update_room(cid INTEGER, l_date DATE sess_id INTEGER, new_rid INTEGER)
+CREATE OR REPLACE FUNCTION update_room(cid INTEGER, l_date DATE, sess_id INTEGER, new_rid INTEGER)
 RETURNS VOID AS $$
 DECLARE
     room_count INTEGER;
     conducts_count INTEGER;
     today DATE;
-    curs CURSOR FOR (SELECT * FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid);
-    r RECORD;
+    sess_date DATE;
     seat_cap INTEGER;
     no_of_reg INTEGER;
 BEGIN
     SELECT COUNT(*) FROM Rooms WHERE rid = new_rid into room_count;
-    IF room_count = 0 THEN --Room does not exists
+    --Room does not exists
+    IF room_count = 0 THEN 
         RAISE EXCEPTION 'Room does not exists';
         RETURN;
     ELSE
         SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO conducts_count;
-        IF conducts_count = 0 THEN --Session does not exists
+        --Session does not exists
+        IF conducts_count = 0 THEN 
             RAISE EXCEPTION 'This session does not exists';
             RETURN;
         ELSE
             SELECT CURRENT_DATE INTO today;
-            OPEN curs;
-            FETCH curs INTO r;
-            IF r.launch_date < today THEN --Session alr launched
+            SELECT CURRENT_DATE INTO today;
+            SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
+            --Session alr launched
+            IF sess_date < today THEN 
                 RAISE EXCEPTION 'Session has already launched, cannot change room';
                 RETURN;
             ELSE
                 SELECT seating_capacity FROM Rooms WHERE rid = new_rid INTO seat_cap;
                 SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO no_of_reg;
-                IF no_of_reg > seat_cap THEN --No of Reg > Seat Cap
+                --No of Reg > Seat Cap
+                IF no_of_reg > seat_cap THEN 
                     RAISE EXCEPTION 'Number of registration for this session exceeds the seating capacity of new room';
                     RETURN;
                 ELSE
                     UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 END IF;
             END IF;
-            CLOSE curs;
         END IF;
     END IF;
 END             
@@ -1002,24 +1014,24 @@ $$ LANGUAGE plpgsql;
 
 --view_manager_report
 CREATE OR REPLACE FUNCTION view_manager_report()
-RETURNS TABLE(mngr_name TEXT, c_area INTEGER, co_ended INTEGER, net_fees INTEGER, c_title TEXT) AS $$
+RETURNS TABLE(mngr_name TEXT, c_area INTEGER, co_ended INTEGER, net_fees NUMERIC, c_title TEXT) AS $$
 DECLARE
     curs CURSOR FOR (SELECT * FROM Managers M, Employees E WHERE M.eid = E.eid ORDER BY name);
     r RECORD;
     
-    total_cc INTEGER;
-    total_cp INTEGER;
-    total_refunded INTEGER;
+    total_cc NUMERIC;
+    total_cp NUMERIC;
+    total_refunded NUMERIC;
     
     refcurs REFCURSOR;
     r_title RECORD;
     
-    title_cc INTEGER;
-    title_cp INTEGER;
-    title_refunded INTEGER;
+    title_cc NUMERIC;
+    title_cp NUMERIC;
+    title_refunded NUMERIC;
     
-    title_max INTEGER;
-    title_temp INTEGER;
+    title_max NUMERIC;
+    title_temp NUMERIC;
 BEGIN
     OPEN curs;
     LOOP
@@ -1077,13 +1089,14 @@ BEGIN
         END IF;
         
         --amount refunded
-        SELECT SUM(Canc.refund_amt)
+        SELECT SUM(Canc.refund_amt / 9)
         FROM Course_areas CA, Courses C, Offerings O, Cancels Canc
         WHERE CA.eid = r.eid
         AND CA.name = C.course_area
         AND C.course_id = O.course_id
         AND O.course_id = Canc.course_id
         AND O.launch_date = Canc.launch_date
+        AND Canc.package_credit IS FALSE
         AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
         INTO total_refunded;
         
@@ -1091,7 +1104,7 @@ BEGIN
             total_refunded := 0;
         END IF;
         
-        net_fees := total_cc + total_cp - total_refunded;
+        net_fees := ROUND(total_cc + total_cp + total_refunded, 2);
         
         --course title that has highest total net registration fees
         OPEN refcurs FOR
@@ -1142,7 +1155,7 @@ BEGIN
             END IF;
             
             --amount refunded
-            SELECT SUM(Canc.refund_amt)
+            SELECT SUM(Canc.refund_amt / 9)
             FROM Course_areas CA, Courses C, Offerings O, Cancels Canc
             WHERE CA.eid = r.eid
             AND CA.name = C.course_area
@@ -1150,6 +1163,7 @@ BEGIN
             AND C.course_id = O.course_id
             AND O.course_id = Canc.course_id
             AND O.launch_date = Canc.launch_date
+            AND Canc.package_credit IS FALSE
             AND DATE_PART('year', O.end_date) = DATE_PART('year', CURRENT_DATE)
             INTO title_refunded;
             
@@ -1157,7 +1171,7 @@ BEGIN
                 title_refunded := 0;
             END IF;
             
-            title_temp := title_cc + title_cp - title_refunded;
+            title_temp := title_cc + title_cp + title_refunded;
             
             IF title_temp > title_max THEN
                 title_max := title_temp;
