@@ -675,7 +675,7 @@ $$ LANGUAGE plpgsql;
 -- 16 get_available_course_sessions
 CREATE OR REPLACE FUNCTION
 get_available_course_sessions()
-RETURNS TABLE(session_date DATE, session_start_hour TIME, instructor_name TEXT, remaining_seat INT) AS $$
+RETURNS TABLE(session_date DATE, session_start_hour TIME, instructor_name TEXT, remaining_seat INTEGER) AS $$
 BEGIN
     --get count of each course session for redeems
     CREATE OR REPLACE VIEW R1 AS
@@ -697,16 +697,17 @@ BEGIN
     --natural full outer join R1, R2, R3
     CREATE OR REPLACE VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
     CREATE OR REPLACE VIEW R5 AS
-    SELECT course_id, launch-date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
+    SELECT course_id, launch_date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
     FROM R4;
 
     --return table statement.
-    SELECT S.date, S.start_time, E.name, R.remaining_seat
+    RETURN QUERY
+    SELECT S.date, S.start_time, E.name, CAST(R.remaining_seat AS INTEGER)
     FROM Sessions S, R5 R, Conducts C, Employees E
-    WHERE (S.launch_date = R.launch_date AND S.course_id = R.course_id AND S.sid = R.side)
+    WHERE (S.launch_date = R.launch_date AND S.course_id = R.course_id AND S.sid = R.sid)
     AND (S.launch_date = C.launch_date AND S.course_id = C.course_id AND S.sid = C.sid)
     AND C.eid = E.eid
-    GROUP BY S.date, S.start_time;
+    ORDER BY S.date ASC, S.start_time ASC;
 END;
 $$ LANGUAGE plpgsql;
 
