@@ -94,9 +94,9 @@ insert into Buys (date, num_remaining_redemptions, package_id, number) values ('
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2022-01-21', 12, 3, '374283312104573');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-07-15', 3, 4, '6759274606121255374');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-02', 8, 5, '5018681020026476334');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-09-05', 17, 6, '3542502207619705');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-09-05', 7, 6, '3542502207619705');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-04', 0, 7, '374283174987222');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-06', 11, 8, '5344807003529486');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-06', 5, 8, '5344807003529486');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-10-21', 2, 9, '4175003665378449');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-02', 3, 10, '3531724438465020');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-25', 1, 11, '3530018806140112');
@@ -107,8 +107,8 @@ insert into Buys (date, num_remaining_redemptions, package_id, number) values ('
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-08-31', 1, 16, '564182540168178440');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-11', 1, 17, '201880497763070');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-26', 13, 18, '564182540168178440');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-26', 16, 19, '560222549646904780');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-03-20', 4, 20, '560222549646904780');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-26', 6, 19, '560222549646904780');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-03-20', 2, 20, '560222549646904780');
 
 --populate Employees table
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (1, 'Galen', '429 Parkside Junction', 'gyepiskopov0@google.com.au', '2495996139', '2010-09-11', null);
@@ -505,8 +505,8 @@ insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, pack
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 8, '2020-08-26', 722.70, false);
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 1, '2020-09-01', 722.70, false);
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 15, '2020-09-03', 722.70, false);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 1, '2021-06-15', 545.40, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 7, '2021-06-10', 545.40, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 3, '2021-07-24', 722.70, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 16, '2021-07-23', 722.70, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 7, '2021-07-27', 722.70, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 1, '2021-06-15', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 7, '2021-06-10', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 3, '2021-07-24', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 16, '2021-07-23', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 7, '2021-07-27', 0, true);
