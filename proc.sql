@@ -543,7 +543,7 @@ BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
 EXECUTE FUNCTION update_refund_policy();
 
 /* ---------------------- functionalities ----------------------*/
-
+DROP FUNCTION IF EXISTS
 -- 7 get_available_instructors
 --This routine is used to retrieve the availability information of instructors who could be assigned to teach a specified course.
 --The inputs to the routine include the following: course identifier, start date, and end date. The routine returns a table of
@@ -675,7 +675,7 @@ $$ LANGUAGE plpgsql;
 -- 16 get_available_course_sessions
 CREATE OR REPLACE FUNCTION
 get_available_course_sessions()
-RETURNS TABLE(session_date DATE, session_start_hour TIME, instructor_name TEXT, remaining seat INT) AS $$
+RETURNS TABLE(session_date DATE, session_start_hour TIME, instructor_name TEXT, remaining_seat INT) AS $$
 BEGIN
     --get count of each course session for redeems
     CREATE OR REPLACE VIEW R1 AS
@@ -695,8 +695,8 @@ BEGIN
     FROM Conducts C, Rooms R
     WHERE R.rid = C.rid;
     --natural full outer join R1, R2, R3
-    CREATE OR VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
-    CREATE OR VIEW R5 AS
+    CREATE OR REPLACE VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR REPLACE VIEW R5 AS
     SELECT course_id, launch-date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
     FROM R4;
 
