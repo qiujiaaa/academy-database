@@ -661,33 +661,33 @@ $$ LANGUAGE plpgsql;
 -- 15 get_available_course_offerings (remaining seat not updated)
 CREATE OR REPLACE FUNCTION
 get_available_course_offerings()
-RETURNS TABLE(course_title TEXT, course_area TEXT, start_date DATE, end_date DATE, registration_deadline DATE, course_fees NUMERIC, remaining_seat INTEGER) $$
+RETURNS TABLE(course_title TEXT, course_area TEXT, start_date DATE, end_date DATE, registration_deadline DATE, course_fees NUMERIC, remaining_seat INTEGER) AS $$
 BEGIN
     --get count of course offerings for redeems
-    CREATE OR REPLACE VIEW R1 AS
+    CREATE OR REPLACE VIEW R151 AS
     SELECT R.course_id, R.launch_date, count(*) AS redeem_count
     FROM Redeems R
     GROUP BY R.course_id, R.launch_date;
     --get count of course offerings for registers
-    CREATE OR REPLACE VIEW R2 AS
+    CREATE OR REPLACE VIEW R152 AS
     SELECT R.course_id, R.launch_date, count(*) AS register_count
     FROM Registers R
     GROUP BY R.course_id, R.launch_date;
     --get seating capacity of course offerings
-    CREATE OR REPLACE VIEW R3 AS
-    SELECT O.course_id, O.launch_date, O.seating_capacity;
+    CREATE OR REPLACE VIEW R153 AS
+    SELECT O.course_id, O.launch_date, O.seating_capacity
     FROM Offerings O;
     --natural full outer join R1, R2, R3
-    CREATE OR REPLACE VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
-    CREATE OR REPLACE VIEW R5 AS
-    SELECT course_id, launch_date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
-    FROM R4;
+    CREATE OR REPLACE VIEW R154 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR REPLACE VIEW R155 AS
+    SELECT course_id, launch_date, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
+    FROM R164;
 
     --return table query.
     RETURN QUERY
     SELECT C.title, C.course_area, O.start_date, O.end_date, O.registration_deadline, O.fees, CAST(R.remaining_seat AS INTEGER)
-    FROM Courses C, Offerings O, R5 R
-    WHERE (C.course_id = R.course_id AND C.launch_date = R.launch_date)
+    FROM Courses C, Offerings O, R155 R
+    WHERE (O.course_id = R.course_id AND O.launch_date = R.launch_date)
     AND C.course_id = O.course_id
     AND R.remaining_seat > 0
     ORDER BY O.registration_deadline ASC, C.title ASC;
@@ -700,32 +700,32 @@ get_available_course_sessions()
 RETURNS TABLE(session_date DATE, session_start_hour TIME, instructor_name TEXT, remaining_seat INTEGER) AS $$
 BEGIN
     --get count of each course session for redeems
-    CREATE OR REPLACE VIEW R1 AS
+    CREATE OR REPLACE VIEW R161 AS
     SELECT R.course_id, R.launch_date, R.sid, count(*) AS redeem_count
     FROM Redeems R, Sessions S
     WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
     GROUP BY R.course_id, R.launch_date, R.sid;
     --get count of each course session for registers
-    CREATE OR REPLACE VIEW R2 AS
+    CREATE OR REPLACE VIEW R162 AS
     SELECT R.course_id, R.launch_date, R.sid, count(*) AS register_count
     FROM Registers R, Sessions S
     WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
     GROUP BY R.course_id, R.launch_date, R.sid;
     --get seating capacity
-    CREATE OR REPLACE VIEW R3 AS
+    CREATE OR REPLACE VIEW R163 AS
     SELECT C.course_id, C.launch_date, C.sid, R.seating_capacity
     FROM Conducts C, Rooms R
     WHERE R.rid = C.rid;
     --natural full outer join R1, R2, R3
-    CREATE OR REPLACE VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
-    CREATE OR REPLACE VIEW R5 AS
+    CREATE OR REPLACE VIEW R164 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR REPLACE VIEW R165 AS
     SELECT course_id, launch_date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
-    FROM R4;
+    FROM R164;
 
     --return table statement.
     RETURN QUERY
     SELECT S.date, S.start_time, E.name, CAST(R.remaining_seat AS INTEGER)
-    FROM Sessions S, R5 R, Conducts C, Employees E
+    FROM Sessions S, R165 R, Conducts C, Employees E
     WHERE (S.launch_date = R.launch_date AND S.course_id = R.course_id AND S.sid = R.sid)
     AND (S.launch_date = C.launch_date AND S.course_id = C.course_id AND S.sid = C.sid)
     AND C.eid = E.eid
