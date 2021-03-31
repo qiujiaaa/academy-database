@@ -303,12 +303,12 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS register_one_course_session ON Registers;
 CREATE TRIGGER register_one_course_session
-BEFORE INSERT OR UPDATE ON Registers FOR EACH ROW
+BEFORE INSERT ON Registers FOR EACH ROW
 EXECUTE FUNCTION register_one_course_session();
 
 DROP TRIGGER IF EXISTS register_one_course_session ON Redeems;
 CREATE TRIGGER register_one_course_session
-BEFORE INSERT OR UPDATE ON Redeems FOR EACH ROW
+BEFORE INSERT ON Redeems FOR EACH ROW
 EXECUTE FUNCTION register_one_course_session();
 
 -- Register sessions before the offering registration deadline
@@ -461,6 +461,7 @@ CREATE TRIGGER check_session_duration
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION check_session_duration();
 
+/*
 -- For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
 -- is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
 -- For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
@@ -513,10 +514,11 @@ DROP TRIGGER IF EXISTS update_refund_policy ON Cancels;
 CREATE TRIGGER update_refund_policy
 BEFORE INSERT OR UPDATE ON Cancels FOR EACH ROW
 EXECUTE FUNCTION update_refund_policy();
+*/
 
 /* ---------------------- functionalities ----------------------*/
 
---add_employee
+--add_employee (1)
 CREATE OR REPLACE FUNCTION 
 add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, emp_cat TEXT, salary INTEGER, join_date DATE,  course_area TEXT[])
 RETURNS VOID AS $$
@@ -590,7 +592,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---remove employee
+--remove employee (2)
 CREATE OR REPLACE FUNCTION remove_employee(id INTEGER, d_date DATE)
 RETURNS VOID AS $$
 DECLARE
@@ -663,13 +665,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---add_customer
+--add_customer (3)
 
 
---update_credit_card
+--update_credit_card (4)
 
 
---add_course
+--add_course (5)
 CREATE OR REPLACE FUNCTION
 add_course(newTitle TEXT, newDescription TEXT, newArea TEXT, newDuration INTEGER)
 RETURNS VOID AS $$
@@ -695,12 +697,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---find_instructors
+--find_instructors (6)
 CREATE OR REPLACE FUNCTION
-find_instructors(IN cid INTEGER, IN sessionDate DATE, IN sessionStartHour TIME, OUT eid INTEGER, OUT name TEXT)
-RETURNS SETOF RECORD AS $$
-    SELECT DISTINCT eid, name
-    FROM (Employees natural join Specializes) natural join Courses
+find_instructors(cid INTEGER, sessionDate DATE, sessionStartHour TIME)
+RETURNS TABLE(eid INTEGER, name TEXT) AS $$
+    SELECT DISTINCT eid, name 
+    FROM (Employees natural join Specializes) natural join Courses 
     WHERE course_id = cid
     EXCEPT
     SELECT DISTINCT eid, name
@@ -710,12 +712,9 @@ RETURNS SETOF RECORD AS $$
     (end_time > (sessionStartHour - interval '1 hour') AND end_time <= (sessionStartHour + interval '2 hours')));
 $$ LANGUAGE sql;
 
+--get_available_instructors (7)
 
---get_available_instructors
-
-
-
---find_rooms
+--find_rooms (8)
 CREATE OR REPLACE FUNCTION
 find_rooms(session_date DATE, start_hour TIME, session_duration INTEGER)
 RETURNS TABLE(rid INT) AS $$
@@ -735,31 +734,195 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---get_available_rooms
+--get_available_rooms (9)
 
---add_course_offering
+--add_course_offering (10)
 
---add_course_package
+--add_course_package (11)
 
---get_available_course_package
+--get_available_course_package (12)
 
---buy_course_package
+--buy_course_package (13)
 
---get_my_course_package
+--get_my_course_package (14)
 
---get_available_course_offerings
+--get_available_course_offerings (15)
 
---get_available_course_sessions
+--get_available_course_sessions (16)
 
---register_session
+--register_session (17)
+CREATE OR REPLACE FUNCTION
+register_session(cust INTEGER, cid INTEGER, cdate DATE, session INTEGER, payment TEXT)
+RETURNS VOID AS $$
+DECLARE
+    temp INTEGER;
+    today DATE;
+    cc TEXT;
+    package INTEGER;
+    package_date DATE;
+BEGIN
+    IF cust IS NULL THEN
+        RAISE EXCEPTION 'Customer ID cannot be null';
+    ELSIF cid IS NULL THEN  
+        RAISE EXCEPTION 'Course ID cannot be null';
+    ELSIF cdate IS NULL THEN
+        RAISE EXCEPTION 'Course offering launch date cannot be null';
+    ELSIF session IS NULL THEN
+        RAISE EXCEPTION 'Session number cannot be null';
+    ELSIF payment IS NULL THEN
+        RAISE EXCEPTION 'Payment cannot be null';
+    END IF;
 
---get_my_registrations
+    IF payment <> 'credit card' AND payment <> 'redemption' THEN
+        RAISE EXCEPTION 'Payment method is invalid';
+    END IF;
 
---update_course_session
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Course Offering does not exist';
+    END IF;
+    SELECT count(*) INTO temp FROM Sessions WHERE course_id = cid AND launch_date = cdate AND sid = session;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Session does not exist';
+    END IF;
+    
+    today := CURRENT_DATE;
+    IF payment = 'redemption' THEN
+        SELECT package_id, Buys.date, number INTO package, package_date, cc
+        FROM Buys natural join Owns
+        WHERE cust_id = cust AND num_remaining_redemptions > 0 LIMIT 1;
+        IF package IS NULL THEN 
+            RAISE EXCEPTION 'No active course package associated with customer';
+        ELSE 
+            INSERT INTO REDEEMS (course_id, launch_date, sid, date, package_id, number, redeems_date) VALUES (cid, cdate, session, package_date, package, cc, today);
+        END IF;
+    ELSE 
+        SELECT number INTO cc FROM Owns WHERE cust_id = cust ORDER BY from_date DESC LIMIT 1;
+        IF cc IS NULL THEN
+            RAISE EXCEPTION 'Customer does not own any credit card';
+        END IF;
+        INSERT INTO Registers (course_id, launch_date, sid, number, date) VALUES (cid, cdate, session, cc, CURRENT_DATE);
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
 
---cancel_registration
+--get_my_registrations (18)
+CREATE OR REPLACE FUNCTION
+get_my_registrations(cust INTEGER)
+RETURNS TABLE(course_name TEXT, course_fees NUMERIC, session_date DATE, session_start_hour TIME, session_duration DOUBLE PRECISION, instructor_name TEXT) AS $$
+    WITH RegisteredSessionDetails as (
+        SELECT DISTINCT A.number, A.title, A.fees, B.date, B.start_time, DATE_PART('hour', B.end_time - B.start_time) + DATE_PART('minute', B.end_time - B.start_time)/60.0 as duration, B.name
+        FROM (Registers natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B ON A.sid = B.sid
+        WHERE B.date > '2021-03-30' or (B.date = '2021-03-30' and B.end_time > '12:00')
+        UNION
+        SELECT DISTINCT A.number, A.title, A.fees, B.date, B.start_time, DATE_PART('hour', B.end_time - B.start_time) + DATE_PART('minute', B.end_time - B.start_time)/60.0 as duration, B.name
+        FROM (Redeems natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B on A.sid = B.sid
+        WHERE B.date > '2021-03-30' or (B.date = '2021-03-30' and B.end_time > '12:00'))
+    SELECT DISTINCT title, fees, date, start_time, duration, name
+    FROM RegisteredSessionDetails JOIN Owns on RegisteredSessionDetails.number = Owns.number
+    WHERE Owns.cust_id = cust
+    ORDER BY date, start_time;
+$$ LANGUAGE sql;
 
---update_instructor
+--update_course_session (19)
+CREATE OR REPLACE FUNCTION
+update_course_session(cust INTEGER, cid INTEGER, cdate DATE, new_session INTEGER)
+RETURNS VOID AS $$
+DECLARE
+    temp INTEGER;
+    temp_1 TEXT;
+    temp_2 TEXT;
+BEGIN
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Course Offering does not exist';
+    END IF;
+    SELECT number INTO temp_1 
+    FROM Registers natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    SELECT number INTO temp_2 
+    FROM Redeems natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    IF temp_1 IS NULL AND temp_2 IS NULL THEN   
+        RAISE EXCEPTION 'Customer does not have an existing session for this course offering';
+    END IF;
+    IF temp_1 IS NOT NULL THEN
+        UPDATE Registers SET sid = new_session 
+        WHERE course_id = cid AND launch_date = cdate AND number = temp_1;
+    ELSE 
+        UPDATE Redeems SET sid = new_session 
+        WHERE course_id = cid AND launch_date = cdate AND number = temp_2;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+--cancel_registration (20)
+CREATE OR REPLACE FUNCTION
+cancel_registration(cust INTEGER, cid INTEGER, cdate DATE)
+RETURNS VOID AS $$
+DECLARE
+    temp INTEGER;
+    temp_1 TEXT;
+    temp_2 TEXT;
+    days INTEGER;
+    session_date DATE;
+    cc TEXT;
+    session INTEGER;
+    amt NUMERIC;
+    buy_date DATE;
+    remaining INTEGER;
+    package INTEGER;
+BEGIN
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+    IF temp = 0 THEN
+        RAISE EXCEPTION 'Course Offering does not exist';
+    END IF;
+    SELECT number INTO temp_1 
+    FROM Registers natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    SELECT number INTO temp_2 
+    FROM Redeems natural join Owns
+    WHERE cust_id = cust AND course_id = cid AND launch_date = cdate;
+    IF temp_1 IS NULL AND temp_2 IS NULL THEN   
+        RAISE EXCEPTION 'Customer does not have an existing session for this course offering';
+    END IF;
+
+    IF temp_1 IS NOT NULL THEN
+        -- Credit card payment in Registers
+        SELECT S.date, R.number, R.sid INTO session_date, cc, session
+        FROM Sessions S join (Registers natural join Owns) R 
+        ON S.course_id = R.course_id AND S.launch_date = R.launch_date AND S.sid = R.sid
+        WHERE S.course_id = cid AND S.launch_date = cdate AND R.cust_id = cust;
+        SELECT session_date::date - CURRENT_DATE::date INTO days;
+        IF days < 7 THEN 
+            RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
+        ELSE
+            DELETE FROM Registers WHERE course_id = cid AND launch_date = cdate and number = cc;
+            SELECT fees INTO amt FROM Offerings WHERE course_id = cid AND launch_date = cdate;
+            INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, amt * 0.9, FALSE);
+        END IF;
+    ELSE 
+        -- add 1 session into buys
+        SELECT R.date, R.number, R.package_id, S.sid, S.date INTO buy_date, cc, package, session, session_date
+        FROM Sessions S join (Redeems natural join Owns) R 
+        ON S.course_id = R.course_id AND S.launch_date = R.launch_date AND S.sid = R.sid
+        WHERE S.course_id = cid AND S.launch_date = cdate AND R.cust_id = cust;
+        SELECT session_date::date - CURRENT_DATE::date INTO days;
+        IF days < 7 THEN 
+            RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
+        ELSE
+            DELETE FROM Redeems WHERE course_id = cid AND launch_date = cdate and number = cc;
+            SELECT num_remaining_redemptions INTO remaining FROM Buys 
+            WHERE date = buy_date AND package_id = package AND number = cc;
+            UPDATE Buys SET num_remaining_redemptions = remaining + 1 
+            WHERE date = buy_date AND package_id = package AND number = cc;
+            INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, 0, TRUE);
+        END IF;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+--update_instructor (21)
 --course offerings identifier is (course_id, launch_date)
 CREATE OR REPLACE FUNCTION 
 update_instructor(cid INTEGER, l_date DATE, sess_id INTEGER, new_eid INTEGER)
@@ -796,7 +959,7 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
---update_room
+--update_room (22)
 --course offerings identifier is (course_id, launch_date)
 CREATE OR REPLACE FUNCTION update_room(cid INTEGER, l_date DATE sess_id INTEGER, new_rid INTEGER)
 RETURNS VOID AS $$
@@ -841,7 +1004,7 @@ BEGIN
 END             
 $$ LANGUAGE plpgsql;
 
---remove_session
+--remove_session (23)
 --course offerings identifier is (course_id, launch_date)
 CREATE OR REPLACE FUNCTION remove_session(cid INTEGER, l_date DATE, sess_id INTEGER)
 RETURNS VOID AS $$
@@ -877,7 +1040,7 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
---add_session
+--add_session (24)
 --course offerings identifier is (course_id, launch_date)
 CREATE OR REPLACE FUNCTION 
 add_session(cid INTEGER, l_date DATE, new_sid INTEGER, new_date DATE, new_start TIME, instr_id INTEGER, room_id INTEGER)
@@ -918,15 +1081,62 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
---pay_salary
+--pay_salary (25)
 
---promote_courses
+--promote_courses (26)
 
---top_packages
+--top_packages (27)
+CREATE OR REPLACE FUNCTION
+top_packages(n INTEGER)
+RETURNS TABLE(package_id INTEGER, free_sessions INTEGER, price INTEGER, start_date DATE, end_date DATE, quantity_sold BIGINT) AS $$
+    WITH PopularCourses as (
+        SELECT DISTINCT package_id, num_free_registrations, price, sale_start_date, sale_end_date, count(*) as quantity
+        FROM Course_packages NATURAL JOIN Buys
+        WHERE DATE_PART('year', CURRENT_DATE) = DATE_PART('year', sale_start_date)
+        GROUP BY package_id
+        ORDER BY count(*) DESC),
+    TopNCourses as (
+        (SELECT * FROM PopularCourses LIMIT n)
+        UNION
+        SELECT * FROM PopularCourses
+        WHERE quantity = (SELECT quantity FROM PopularCourses OFFSET (n-1) LIMIT 1))
+    SELECT * FROM TopNCourses ORDER BY quantity DESC, price DESC;
+$$ LANGUAGE sql;
 
---popular courses
+--popular_courses (28)
+/*
+CREATE OR REPLACE FUNCTION
+popular_courses()
+RETURNS TABLE(course_id INTEGER, course_title TEXT, course_area TEXT, num_offerings BIGINT, registrations INTEGER) AS $$
+    WITH A as (
+        SELECT course_id, launch_date, start_date, title, course_area 
+        FROM (Offerings NATURAL JOIN Courses) O1
+        WHERE 
+        --DATE_PART('year', CURRENT_DATE) = DATE_PART('year', start_date) AND 
+            2 <= (SELECT COUNT(*) FROM Offerings NATURAL JOIN Courses WHERE O1.course_id = course_id)),
+    B as (
+        SELECT course_id, launch_date, start_date FROM Registers NATURAL JOIN Offerings 
+        UNION ALL
+        SELECT course_id, launch_date, start_date FROM Redeems NATURAL JOIN Offerings),
+    C as (
+        SELECT course_id, launch_date, start_date, count(*) as registrations
+        FROM B GROUP BY course_id, launch_date, start_date),
+    OfferingRegistrations as (
+        SELECT * FROM A NATURAL LEFT JOIN C),
+    InvalidCourses as (
+        SELECT DISTINCT O1.course_id 
+        FROM OfferingRegistrations O1, OfferingRegistrations O2
+        WHERE O1.course_id = O2.course_id AND O1.start_date > O2.start_date AND 
+            O1.registrations <= O2.registrations
+    )
+    SELECT DISTINCT course_id, title, course_area FROM OfferingRegistrations O
+    WHERE not exists (
+        SELECT 1 FROM InvalidCourses I WHERE I.course_id = O.course_id
+        );
+$$ LANGUAGE sql;
+*/
 
---view_summary_report
+--view_summary_report (29)
 CREATE OR REPLACE FUNCTION view_summary_report(n INTEGER)
 RETURNS TABLE(mth INTEGER, yr INTEGER, salary_paid INTEGER, sales_of_cpkg INTEGER, reg_fee_cc INTEGER, refund_fees INTEGER, creg_cpkg INTEGER) AS $$
 BEGIN
@@ -1000,7 +1210,7 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
---view_manager_report
+--view_manager_report (30)
 CREATE OR REPLACE FUNCTION view_manager_report()
 RETURNS TABLE(mngr_name TEXT, c_area INTEGER, co_ended INTEGER, net_fees INTEGER, c_title TEXT) AS $$
 DECLARE
