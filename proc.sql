@@ -675,18 +675,38 @@ $$ LANGUAGE plpgsql;
 -- 16 get_available_course_sessions
 CREATE OR REPLACE FUNCTION
 get_available_course_sessions()
-RETURNS VOID AS $$
+RETURNS TABLE(session_date DATE, session_start_hour TIME, instructor_name TEXT, remaining seat INT) AS $$
 BEGIN
+    --get count of each course session for redeems
     CREATE OR REPLACE VIEW R1 AS
     SELECT R.course_id, R.launch_date, R.sid, count(*) AS redeem_count
     FROM Redeems R, Sessions S
     WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
     GROUP BY R.course_id, R.launch_date, R.sid;
+    --get count of each course session for registers
     CREATE OR REPLACE VIEW R2 AS
     SELECT R.course_id, R.launch_date, R.sid, count(*) AS register_count
     FROM Registers R, Sessions S
     WHERE R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid
     GROUP BY R.course_id, R.launch_date, R.sid;
+    --get seating capacity
+    CREATE OR REPLACE VIEW R3 AS
+    SELECT C.course_id, C.launch_date, C.sid, R.seating_capacity
+    FROM Conducts C, Rooms R
+    WHERE R.rid = C.rid;
+    --natural full outer join R1, R2, R3
+    CREATE OR VIEW R4 AS SELECT * FROM (R1 natural full outer join R2) AS R12 natural full outer join R3;
+    CREATE OR VIEW R5 AS
+    SELECT course_id, launch-date, sid, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
+    FROM R4;
+
+    --return table statement.
+    SELECT S.date, S.start_time, E.name, R.remaining_seat
+    FROM Sessions S, R5 R, Conducts C, Employees E
+    WHERE (S.launch_date = R.launch_date AND S.course_id = R.course_id AND S.sid = R.side)
+    AND (S.launch_date = C.launch_date AND S.course_id = C.course_id AND S.sid = C.sid)
+    AND C.eid = E.eid
+    GROUP BY S.date, S.start_time;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -701,6 +721,7 @@ $$ LANGUAGE plpgsql;
 -- course identifier of a course C in area A, course title of C, launch date of course offering of course C that still accepts registrations,
 -- course offering’s registration deadline, and fees for the course offering.
 -- The output is sorted in ascending order of customer identifier and course offering’s registration deadline.
+
 
 --add_employee
 CREATE OR REPLACE FUNCTION 
