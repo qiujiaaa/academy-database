@@ -140,7 +140,7 @@ create table Courses (
     title          text not null unique,
     description    text,
     course_area    text not null references Course_areas,
-    duration       integer
+    duration       integer not null
 );
 
 /*
@@ -154,7 +154,7 @@ create table Offerings (
     launch_date                   date,
     fees                          numeric not null,
     target_number_registrations   integer not null,
-    registration_deadline         date,
+    registration_deadline         date not null,
     start_date                    date,
     end_date                      date, 
     eid                           integer not null references Administrators,
