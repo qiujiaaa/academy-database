@@ -485,6 +485,11 @@ insert into Registers(course_id, launch_date, sid, number, date) values (8, '201
 insert into Registers(course_id, launch_date, sid, number, date) values (13, '2020-08-14', 2, '4175003665378449', '2020-09-13');
 insert into Registers(course_id, launch_date, sid, number, date) values (13, '2020-08-14', 2, '374283174987222', '2020-09-14');
 insert into Registers(course_id, launch_date, sid, number, date) values (13, '2020-08-14', 2, '201880497763070', '2020-09-14');
+insert into Registers(course_id, launch_date, sid, number, date) values (9, '2020-01-01', 1, '3567052898252853', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (9, '2020-01-01', 1, '5018681020026476334', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (9, '2020-01-01', 1, '3531724438465020', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (1, '2020-01-01', 1, '3531724438465020', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (1, '2020-01-01', 1, '5018377800024433', '2020-08-01');
 
 -- populate Redeems
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 1, '2021-04-26', 19, '560222549646904780', '2021-07-18');

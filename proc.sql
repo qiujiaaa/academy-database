@@ -812,12 +812,14 @@ get_my_registrations(cust INTEGER)
 RETURNS TABLE(course_name TEXT, course_fees NUMERIC, session_date DATE, session_start_hour TIME, session_duration DOUBLE PRECISION, instructor_name TEXT) AS $$
     WITH RegisteredSessionDetails as (
         SELECT DISTINCT A.number, A.title, A.fees, B.date, B.start_time, DATE_PART('hour', B.end_time - B.start_time) + DATE_PART('minute', B.end_time - B.start_time)/60.0 as duration, B.name
-        FROM (Registers natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B ON A.sid = B.sid
-        WHERE B.date > '2021-03-30' or (B.date = '2021-03-30' and B.end_time > '12:00')
+        FROM (Registers natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B 
+        ON A.sid = B.sid AND A.course_id = B.course_id AND A.launch_date = B.launch_date
+        WHERE B.date > CURRENT_DATE or (B.date = CURRENT_DATE and B.end_time > CURRENT_TIME)
         UNION
         SELECT DISTINCT A.number, A.title, A.fees, B.date, B.start_time, DATE_PART('hour', B.end_time - B.start_time) + DATE_PART('minute', B.end_time - B.start_time)/60.0 as duration, B.name
-        FROM (Redeems natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B on A.sid = B.sid
-        WHERE B.date > '2021-03-30' or (B.date = '2021-03-30' and B.end_time > '12:00'))
+        FROM (Redeems natural join Courses natural join Offerings) A join (Sessions natural join Conducts natural join Employees) B 
+        ON A.sid = B.sid AND A.course_id = B.course_id AND A.launch_date = B.launch_date
+        WHERE B.date > CURRENT_DATE or (B.date = CURRENT_DATE and B.end_time > CURRENT_TIME))
     SELECT DISTINCT title, fees, date, start_time, duration, name
     FROM RegisteredSessionDetails JOIN Owns on RegisteredSessionDetails.number = Owns.number
     WHERE Owns.cust_id = cust
@@ -1139,37 +1141,47 @@ RETURNS TABLE(package_id INTEGER, free_sessions INTEGER, price INTEGER, start_da
 $$ LANGUAGE sql;
 
 --popular_courses (28)
-/*
 CREATE OR REPLACE FUNCTION
 popular_courses()
-RETURNS TABLE(course_id INTEGER, course_title TEXT, course_area TEXT, num_offerings BIGINT, registrations INTEGER) AS $$
+RETURNS TABLE(course_id INTEGER, course_title TEXT, course_area TEXT, num_offerings BIGINT, registrations BIGINT) AS $$
+    -- A = list of courses with at least 2 offerings this year
     WITH A as (
         SELECT course_id, launch_date, start_date, title, course_area 
         FROM (Offerings NATURAL JOIN Courses) O1
-        WHERE 
-        --DATE_PART('year', CURRENT_DATE) = DATE_PART('year', start_date) AND 
+        WHERE DATE_PART('year', CURRENT_DATE) = DATE_PART('year', start_date) AND 
             2 <= (SELECT COUNT(*) FROM Offerings NATURAL JOIN Courses WHERE O1.course_id = course_id)),
+    -- B = all registrations
     B as (
         SELECT course_id, launch_date, start_date FROM Registers NATURAL JOIN Offerings 
         UNION ALL
         SELECT course_id, launch_date, start_date FROM Redeems NATURAL JOIN Offerings),
+    -- C = course offerings and their number of registrations
     C as (
         SELECT course_id, launch_date, start_date, count(*) as registrations
         FROM B GROUP BY course_id, launch_date, start_date),
+    -- OfferingRegistrations = courses with at least 2 offerings this year and their registrations for each offering
     OfferingRegistrations as (
-        SELECT * FROM A NATURAL LEFT JOIN C),
+        SELECT * FROM A NATURAL JOIN C),
+    -- InvalidCourses = course_ids where there exists 2 offerings O1, O2 such that O1 starts earlier than O2 and O1's registrations >= O2's registrations
     InvalidCourses as (
         SELECT DISTINCT O1.course_id 
         FROM OfferingRegistrations O1, OfferingRegistrations O2
         WHERE O1.course_id = O2.course_id AND O1.start_date > O2.start_date AND 
             O1.registrations <= O2.registrations
+    ),
+    ValidOfferingRegistrations as (
+        SELECT * FROM OfferingRegistrations O WHERE NOT EXISTS (SELECT 1 FROM InvalidCourses I WHERE I.course_id = O.course_id)
+    ),
+    OfferingCount as (
+        SELECT DISTINCT course_id, count(*) as num_offerings FROM ValidOfferingRegistrations GROUP BY course_id
+    ),
+    LatestOffering as (
+        SELECT DISTINCT course_id, registrations FROM ValidOfferingRegistrations O
+        WHERE start_date = (SELECT max(start_date) FROM ValidOfferingRegistrations WHERE O.course_id = course_id)
     )
-    SELECT DISTINCT course_id, title, course_area FROM OfferingRegistrations O
-    WHERE not exists (
-        SELECT 1 FROM InvalidCourses I WHERE I.course_id = O.course_id
-        );
+    SELECT course_id, title, course_area, num_offerings, registrations FROM ValidOfferingRegistrations natural join OfferingCount natural join LatestOffering
+    ORDER BY registrations DESC, course_id;    
 $$ LANGUAGE sql;
-*/
 
 --view_summary_report (29)
 CREATE OR REPLACE FUNCTION view_summary_report(n INTEGER)
