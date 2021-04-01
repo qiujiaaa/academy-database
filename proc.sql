@@ -755,32 +755,37 @@ DECLARE
     current_day DATE;
     r RECORD;
     customer_id INT;
+    count INTEGER;
 BEGIN
     current_day := CURRENT_DATE;
-    cut_off_inactive_date := make_date(EXTRACT(YEAR FROM DATE current_day), EXTRACT(MONTH FROM DATE current_day), 1);
+    cut_off_inactive_date := make_date(CAST(EXTRACT(YEAR FROM current_day) AS INT), CAST(EXTRACT(MONTH FROM current_day) AS INT), 1);
     cut_off_inactive_date := cut_off_inactive_date - interval '5 month';
 
     --get course areas with information.
-    SELECT OR REPLACE VIEW R260 AS
+    CREATE OR REPLACE VIEW R260 AS
     SELECT C.course_area, C.course_id, C.title, O.launch_date, O.registration_deadline, O.fees
     FROM Courses C, Offerings O
-    WHERE C.course_id = O.course.id
-    AND O.registration_deadline >= current_day;
-    --get active customers for redeems
+    WHERE C.course_id = O.course_id
+    AND O.registration_deadline >= CURRENT_DATE;
+    --create table for cut_off_date
+    DROP TABLE IF EXISTS cut_off_date CASCADE;
+    CREATE TABLE cut_off_date(date DATE);
+    INSERT INTO cut_off_date(date) VALUES(cut_off_inactive_date);
     CREATE OR REPLACE VIEW R261 AS
+    --get active customers for redeems
     SELECT O.cust_id
-    FROM Redeems R, Owns O
-    WHERE R.date >= cut_off_inactive_date
+    FROM Redeems R, Owns O, cut_off_date C
+    WHERE R.date >= C.date
     AND R.number = O.number;
     --get active customers for registers
     CREATE OR REPLACE VIEW R262 AS
     SELECT O.cust_id
-    FROM Registers R, Owns O
-    WHERE R.date >= cut_off_inactive_date
+    FROM Registers R, Owns O, cut_off_date C
+    WHERE R.date >= C.date
     AND R.number = O.number;
     --get inactive customers
     CREATE OR REPLACE VIEW R263 AS
-    SELECT cust_id FROM customers EXCEPT SELECT cust_id FROM (SELECT * FROM R261 UNION SELECT * FROM R262);
+    SELECT cust_id FROM customers EXCEPT SELECT cust_id FROM (SELECT * FROM R261 UNION SELECT * FROM R262) AS U12;
     --create table for cust_id, cust_name, course_area
     DROP TABLE IF EXISTS TABLE26;
     CREATE TABLE TABLE26 (
@@ -795,38 +800,43 @@ BEGIN
         FETCH cur1 INTO r;
         EXIT WHEN NOT FOUND;
         customer_id := r.cust_id;
+        DROP TABLE IF EXISTS CI CASCADE;
+        CREATE TABLE CI(cust_id int);
+        INSERT INTO CI(cust_id) VALUES(customer_id);
         --get redeems for specific inactive customer
         CREATE OR REPLACE VIEW redeems_date AS
-        SELECT O.cust_id, R.date, C.area
-        FROM Owns O, Redeems R, Course C
-        WHERE O.cust_id = customer_id AND R.number = O.number AND C.course_id = R.course_id;
+        SELECT O.cust_id, R.date, C.course_area
+        FROM Owns O, Redeems R, Courses C, CI
+        WHERE O.cust_id = CI.cust_id AND R.number = O.number AND C.course_id = R.course_id;
         --get registers for specific inactive customer
         CREATE OR REPLACE VIEW registers_date AS
         SELECT O.cust_id, R.date, C.course_area
-        FROM Owns, Registers R, Course C
-        WHERE O.cust_id = customer_id AND R.number = O.number AND C.course = R.course_id;
+        FROM Owns O, Registers R, Courses C, CI
+        WHERE O.cust_id = CI.cust_id AND R.number = O.number AND C.course_id = R.course_id;
         --union all for redeems and registers
         CREATE OR REPLACE VIEW RR AS
         SELECT * FROM redeems_date UNION ALL SELECT * FROM registers_date;
         --limit to 3 most course offering registered
         CREATE OR REPLACE VIEW RR_LIMIT AS
         SELECT * FROM RR ORDER BY date DESC LIMIT 3;
-        IF (SELECT count(*) FROM RR_LIMIT = 0) THEN
+        SELECT count(*) INTO count FROM RR_LIMIT;
+        IF (count = 0) THEN
             CREATE OR REPLACE VIEW RR_MAX AS
-            SELECT r.cust_id, C1.name, C2.course_area
-            FROM r, Customer C1, Courses C2
-            WHERE r.cust_id = C1.cust_id;
+            SELECT CI.cust_id, C1.name, C2.course_area
+            FROM CI, Customers C1, Courses C2
+            WHERE CI.cust_id = C1.cust_id;
             INSERT INTO TABLE26 (SELECT * FROM RR_MAX);
         ELSE
-            INSERT INTO TABLE26 (SELECT R.cust_id, C.name, R.course_area FROM Customers C, RR_LIMIT R WHERE C.cust_id = R.cust_id);
+            INSERT INTO TABLE26 (SELECT RR.cust_id, C.name, RR.course_area FROM Customers C, RR_LIMIT RR WHERE C.cust_id = RR.cust_id);
         END IF;
     END LOOP;
     CLOSE cur1;
 
     --return table query
     RETURN QUERY
-    SELECT *
-    FROM TABLE26 T NATURAL JOIN R260;
+    SELECT T.cust_id, T.name, T.course_area, R260.course_id, R260.title, R260.launch_date, R260.registration_deadline, R260.fees
+    FROM R260, (SELECT DISTINCT * FROM TABLE26) AS T
+    WHERE T.course_area = R260.course_area;
 
 END;
 $$ LANGUAGE plpgsql;
