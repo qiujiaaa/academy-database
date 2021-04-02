@@ -632,13 +632,15 @@ CREATE OR REPLACE FUNCTION
 buy_course_package(customer_id INT, course_package_id INT)
 RETURNS VOID AS $$
 DECLARE
+    current_day DATE := CURRENT_DATE;
     cust_count INTEGER;
     package_count INTEGER;
     cc_number TEXT;
-    date_range INT;
     start_date DATE;
     end_date DATE;
+    redemptions INTEGER;
 BEGIN
+    --check if inputs are valid
     SELECT Count(*) INTO cust_count
     FROM Customers C
     WHERE C.cust_id = customer_id;
@@ -650,14 +652,22 @@ BEGIN
     ELSIF (package_count = 0) THEN
         RAISE EXCEPTION 'Invalid course package id!';
     END IF;
+
     SELECT number INTO cc_number FROM Owns WHERE Owns.cust_id = customer_id LIMIT 1;
     SELECT sale_start_date INTO start_date FROM Course_packages C WHERE C.package_id = course_package_id;
     SELECT sale_end_date INTO end_date FROM Course_packages C WHERE C.package_id = course_package_id;
-    date_range := end_date - start_date;
-    -- buy package by inserting a record into Buys with a random date between
-    -- sale starting date and sale ending date of package
+    SELECT num_free_registrations INTO redemptions FROM Course_packages C WHERE C.package_id = course_package_id;
+
+    IF (current_day < start_date) THEN
+        RAISE EXCEPTION 'Current day is before the course package sale!';
+    ELSIF (current_day > end_date) THEN
+        RAISE EXCEPTION 'Current day is after course package sale!';
+    END IF;
+
+    -- add buy package transaction
     INSERT INTO Buys (date, num_remaining_redemptions, package_id, number) VALUES
-    (start_date + random_between(1, date_range), 1, course_package_id, cc_number);
+    (current_day, redemptions, course_package_id, cc_number);
+    RAISE NOTICE 'purchase of course package successful!';
 END;
 $$ LANGUAGE plpgsql;
 
