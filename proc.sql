@@ -551,47 +551,47 @@ DROP FUNCTION IF EXISTS get_available_course_sessions();
 --has been assigned for this month, day (which is within the input date range [start date, end date]), and an array of
 --the available hours for the instructor on the specified day. The output is sorted in ascending order of employee identifier and day,
 --and the array entries are sorted in ascending order of hour.
-CREATE OR REPLACE FUNCTION
-get_available_instructors(course_id INT, start_date DATE, end_date DATE)
-RETURNS VOID AS $$
---RETURNS TABLE(employee_id INT, name TEXT, working_hours INTEGER, day DATE, available_hours INTEGER[]) AS $$
-DECLARE
-    count INTEGER;
-    avail_hours INTEGER[];
-    i INTEGER;
-BEGIN
-    --check start date is not greater than end date
-    IF (start_date > end_date) THEN
-        RAISE EXCEPTION 'start date is earlier than end date!';
-    END IF;
-    --check if course_id inputted is valid.
-    SELECT count(*) INTO count
-    FROM Courses C
-    WHERE C.course_id = course_id;
-    IF count = 0 THEN
-        RAISE EXCEPTION 'Invalid course_id inputted in this function';
-    END IF;
-    -- find eid (instructors that specializes in teaching course teach course)
-    CREATE OR REPLACE VIEW R71 AS
-    SELECT S.eid
-    FROM Specializes S, Courses C,
-    WHERE S.course_area = C.course_area
-    AND C.course_id = course_id;
-    -- find eid with name (employees) and total teaching hours this month (Pay slips)
-    CREATE OR REPLACE VIEW R72 AS
-    SELECT R.eid, E.name, P.num_work_hours
-    FROM R71 R, Employees E, Pay_Slips P
-    WHERE R.eid = E.eid AND E.eid = P.eid;
-
-    --loop for each employee
-
-        -- loop for start date to end date
-        FOR i IN 0..CAST(((end_date - start_date) + 1) AS INTEGER) LOOP
-        END LOOP;
-
-    -- array of available hours.
-END;
-$$ LANGUAGE plpgsql;
+--CREATE OR REPLACE FUNCTION
+--get_available_instructors(course_id INT, start_date DATE, end_date DATE)
+--RETURNS VOID AS $$
+----RETURNS TABLE(employee_id INT, name TEXT, working_hours INTEGER, day DATE, available_hours INTEGER[]) AS $$
+--DECLARE
+--    count INTEGER;
+--    avail_hours INTEGER[];
+--    i INTEGER;
+--BEGIN
+--    --check start date is not greater than end date
+--    IF (start_date > end_date) THEN
+--        RAISE EXCEPTION 'start date is earlier than end date!';
+--    END IF;
+--    --check if course_id inputted is valid.
+--    SELECT count(*) INTO count
+--    FROM Courses C
+--    WHERE C.course_id = course_id;
+--    IF count = 0 THEN
+--        RAISE EXCEPTION 'Invalid course_id inputted in this function';
+--    END IF;
+--    -- find eid (instructors that specializes in teaching course teach course)
+--    CREATE OR REPLACE VIEW R71 AS
+--    SELECT S.eid
+--    FROM Specializes S, Courses C,
+--    WHERE S.course_area = C.course_area
+--    AND C.course_id = course_id;
+--    -- find eid with name (employees) and total teaching hours this month (Pay slips)
+--    CREATE OR REPLACE VIEW R72 AS
+--    SELECT R.eid, E.name, P.num_work_hours
+--    FROM R71 R, Employees E, Pay_Slips P
+--    WHERE R.eid = E.eid AND E.eid = P.eid;
+--
+--    --loop for each employee
+--
+--        -- loop for start date to end date
+--        FOR i IN 0..CAST(((end_date - start_date) + 1) AS INTEGER) LOOP
+--        END LOOP;
+--
+--    -- array of available hours.
+--END;
+--$$ LANGUAGE plpgsql;
 
 -- 8 find_rooms
 CREATE OR REPLACE FUNCTION
@@ -655,7 +655,7 @@ $$ LANGUAGE plpgsql;
 --and information for each redeemed session (course name, session date, session start hour). The redeemed session information is
 --sorted in ascending order of session date and start hour.
 CREATE OR REPLACE FUNCTION
-get_my_course_package(customer_id INT)
+get_my_course_package(customer_id INTEGER)
 RETURNS SETOF JSON AS $$
 DECLARE
     count INTEGER;
@@ -668,14 +668,17 @@ BEGIN
         RAISE EXCEPTION 'Input customer_id is invalid!';
     END IF;
 
+    -- get customer id into a table to use it
+    DROP TABLE IF EXISTS TABLE14 CASCADE;
+    CREATE TABLE TABLE14( cust_id INTEGER);
+    INSERT INTO TABLE14(cust_id) VALUES(customer_id);
     --get the active/partially active course package
     CREATE OR REPLACE VIEW R141 AS
     SELECT C.name, B.date, C.num_free_registrations, B.num_remaining_redemptions, B.number, B.package_id
-    FROM Buys B, Owns O, Course_packages C
+    FROM Buys B, Owns O, Course_packages C, TABLE14 T
     WHERE B.number = O.number
-    AND O.cust_id = customer_id
-    AND C.package_id = B.package_id
-    LIMIT 1;
+    AND O.cust_id = T.cust_id
+    AND C.package_id = B.package_id LIMIT 1;
 
     --get information for each redeemed session
     CREATE OR REPLACE VIEW R142 AS
@@ -688,7 +691,7 @@ BEGIN
 
     RETURN QUERY
     SELECT row_to_json(
-        ROW(R.name, R.date, R.num_free_registrations, R.num_remaining_redemptions, ROW(R2.*))
+        ROW(R1.name, R1.date, R1.num_free_registrations, R1.num_remaining_redemptions, ROW(R2.*))
     ) FROM R141 R1, R142 R2;
 
 END;
