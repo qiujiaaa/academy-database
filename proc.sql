@@ -600,17 +600,30 @@ RETURNS TABLE(rid INT) AS $$
 DECLARE
     end_hour TIME;
 BEGIN
-    end_hour := start_hour + session_duration;
+    end_hour := start_hour + session_duration * interval '1 minute';
+    IF (start_hour <= '12:00' AND end_hour > '12:00') THEN
+        RAISE EXCEPTION 'No session can be conducted between 12pm and 2pm!';
+    ELSIF (start_hour < '09:00') THEN
+        RAISE EXCEPTION 'No session can start before 9AM!';
+    ELSIF (end_hour > '18:00') THEN
+        RAISE EXCEPTION 'No session can be conducted after 6PM!';
+    END IF;
+
+    --insert variables into table to use it
+    DROP TABLE IF EXISTS TABLE8;
+    CREATE TABLE TABLE8( start_hour TIME, end_hour TIME, session_date DATE);
+    INSERT INTO TABLE8(start_hour, end_hour, session_date) VALUES(start_hour,end_hour, session_date);
+
     RETURN QUERY
-    SELECT rid
-    FROM Rooms
+    SELECT R.rid
+    FROM Rooms R
     EXCEPT
     SELECT C.rid
-    FROM Conducts C, Sessions S
+    FROM Conducts C, Sessions S, TABLE8 T
     WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
-    AND session_date = S.date
-    AND ((S.start_time >= start_hour AND end_hour > S.start_time)
-    OR (start_hour >= S.start_time AND S.end_time > start_hour));
+    AND T.session_date = S.date
+    AND ((S.start_time >= T.start_hour AND T.end_hour > S.start_time)
+    OR (T.start_hour >= S.start_time AND S.end_time > T.start_hour));
 END;
 $$ LANGUAGE plpgsql;
 
