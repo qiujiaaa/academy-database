@@ -620,7 +620,7 @@ BEGIN
                 EXIT WHEN NOT FOUND;
                 IF r.registration_deadline > d_date THEN
                     RAISE EXCEPTION 'Administrator is still handling some course offering';
-                    RETURN; --Is this correct?
+                    RETURN;
                 END IF;
                 
                 UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
