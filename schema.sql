@@ -18,7 +18,8 @@ create table Course_packages (
     package_id              integer,   
     sale_start_date         date not null,
     primary key (package_id),
-    check (price >= 0 and num_free_registrations >= 0)
+    check (price >= 0 and num_free_registrations >= 0),
+    check (sale_start_date::date <= sale_end_date::date)
 );
 
 create table Credit_cards (
