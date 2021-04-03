@@ -156,15 +156,17 @@ create table Offerings (
     fees                          numeric not null,
     target_number_registrations   integer not null,
     registration_deadline         date not null,
-    start_date                    date,
-    end_date                      date, 
+    start_date                    date not null,
+    end_date                      date not null, 
     eid                           integer not null references Administrators,
-    seating_capacity              integer,
+    seating_capacity              integer not null,
     primary key (course_id, launch_date),
     constraint deadline_before_start check(registration_deadline <  start_date),
     constraint start_before_end check(start_date <=  end_date),
     constraint fees_positive check(fees >= 0),
-    constraint target_number_registrations_positive check(target_number_registrations >= 0)
+    constraint seating_capacity_positive check(seating_capacity >= 0),
+    constraint target_number_registrations_positive check(target_number_registrations >= 0),
+    constraint more_seats_than_target check(seating_capacity >= target_number_registrations)
 );
 
 create table Rooms (
