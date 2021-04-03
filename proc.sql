@@ -944,28 +944,28 @@ CREATE OR REPLACE FUNCTION
 get_available_course_offerings()
 RETURNS TABLE(course_title TEXT, course_area TEXT, start_date DATE, end_date DATE, registration_deadline DATE, course_fees NUMERIC, remaining_seat INTEGER) AS $$
 BEGIN
-    --get count of course offerings for redeems
-    CREATE OR REPLACE VIEW R151 AS
-    SELECT R.course_id, R.launch_date, count(*) AS redeem_count
-    FROM Redeems R
-    GROUP BY R.course_id, R.launch_date;
-    --get count of course offerings for registers
-    CREATE OR REPLACE VIEW R152 AS
-    SELECT R.course_id, R.launch_date, count(*) AS register_count
-    FROM Registers R
-    GROUP BY R.course_id, R.launch_date;
-    --get seating capacity of course offerings
-    CREATE OR REPLACE VIEW R153 AS
-    SELECT O.course_id, O.launch_date, O.seating_capacity
-    FROM Offerings O;
-    --natural full outer join R1, R2, R3
-    CREATE OR REPLACE VIEW R154 AS SELECT * FROM (R151 natural full outer join R152) AS R1512 natural full outer join R153;
-    CREATE OR REPLACE VIEW R155 AS
-    SELECT course_id, launch_date, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat
-    FROM R164;
-
     --return table query.
     RETURN QUERY
+    WITH R151 AS(
+        --get count of course offerings for redeems
+        SELECT R.course_id, R.launch_date, count(*) AS redeem_count
+        FROM Redeems R
+        GROUP BY R.course_id, R.launch_date
+    ), R152 AS (
+        --get count of course offerings for registers
+        SELECT R.course_id, R.launch_date, count(*) AS register_count
+        FROM Registers R
+        GROUP BY R.course_id, R.launch_date
+    ), R153 AS (
+        --get seating capacity of course offerings
+        SELECT O.course_id, O.launch_date, O.seating_capacity
+        FROM Offerings O
+    ), R154 AS (
+        --natural full outer join R151, R152, R153
+        SELECT * FROM (R151 natural full outer join R152) AS R1512 natural full outer join R153
+    ), R155 AS (
+        SELECT course_id, launch_date, (seating_capacity - COALESCE(redeem_count, 0) - COALESCE(register_count, 0)) AS remaining_seat FROM R154
+    )
     SELECT C.title, C.course_area, O.start_date, O.end_date, O.registration_deadline, O.fees, CAST(R.remaining_seat AS INTEGER)
     FROM Courses C, Offerings O, R155 R
     WHERE (O.course_id = R.course_id AND O.launch_date = R.launch_date)
