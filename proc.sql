@@ -826,7 +826,7 @@ begin
 end;
 $$ language plpgsql;
 
-/*
+
 --update_credit_card (4)
 --update_credit_card (update Owns as well)
 -- TODO: clarify which card to update, for now its the latest date
@@ -843,7 +843,7 @@ begin
     update Owns set from_date::date = current_date::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
 end;
 $$ language plpgsql;
-*/
+
 
 --add_course (5)
 CREATE OR REPLACE FUNCTION
@@ -893,23 +893,78 @@ $$ LANGUAGE sql;
 --has been assigned for this month, day (which is within the input date range [start date, end date]), and an array of
 --the available hours for the instructor on the specified day. The output is sorted in ascending order of employee identifier and day,
 --and the array entries are sorted in ascending order of hour.
-DROP FUNCTION IF EXISTS get_available_instructors(integer, date, date);
 CREATE OR REPLACE FUNCTION
 get_available_instructors(cid INT, start_date DATE, end_date DATE)
-RETURNS TABLE(employee_id INT, name TEXT, working_hours INTEGER, day DATE, available_hours INTEGER[]) AS $$
+RETURNS TABLE(employee_id INT, name TEXT, working_hours INTEGER, day DATE, available_hours TIME[]) AS $$
 DECLARE
+    curs CURSOR FOR (SELECT * FROM Specializes NATURAL JOIN Courses WHERE course_id = cid ORDER BY eid);
+    r RECORD;
+    lesson_duration INTEGER;
+    c_date DATE;
+    c_time TIME;
+    hours_this_month INTEGER;
+    found BOOLEAN;
+    hour_array TIME[];
+    temp INTEGER;
 BEGIN
     --check start date is not greater than end date
     IF (start_date > end_date) THEN
-        RAISE EXCEPTION 'start date is earlier than end date!';
+        RAISE EXCEPTION 'Start date is earlier than end date!';
     END IF;
-    --check if course_id inputted is valid.
-    SELECT count(*) INTO count
-    FROM Courses C
-    WHERE C.course_id = cid;
-    IF count = 0 THEN
+    --check if course_id is valid.
+    SELECT count(*) INTO temp FROM Courses C WHERE C.course_id = cid;
+    IF temp = 0 THEN
         RAISE EXCEPTION 'Invalid course_id inputted in this function!';
     END IF;
+
+    SELECT duration INTO lesson_duration FROM Courses WHERE course_id = cid;
+    OPEN curs;
+    LOOP -- loop through all instructors specialising in this course area
+        FETCH curs INTO r;
+        EXIT WHEN NOT FOUND;
+        IF r.eid IS NULL THEN EXIT; END IF;
+        RAISE NOTICE 'eid: %', r.eid;
+        c_date := start_date;
+        found := FALSE;
+        RAISE NOTICE 'YO';
+        -- check the number of hours this month first
+        SELECT COALESCE(sum(duration), 0) INTO hours_this_month FROM Conducts NATURAL JOIN Courses NATURAL JOIN Sessions 
+        WHERE eid = r.eid and DATE_PART('month', date) = DATE_PART('month', c_date);
+        SELECT count(*) INTO temp FROM Part_time_instructors WHERE eid = r.eid;
+        -- is a part timer and this additional lesson will over run 30 hours
+        IF temp = 1 AND hours_this_month + lesson_duration > 30 THEN
+            -- go to first day of next month & check if it is before end date
+            c_date := c_date + interval '1 month';
+            c_date := make_date(DATE_PART('year', c_date), DATE_PART('month', c_date), 1);
+        END IF;
+        LOOP -- loop through all dates to find a date where there is a time slot
+            EXIT WHEN found = TRUE OR c_date > end_date;
+            hour_array := ARRAY[]::TIME[];
+            c_time := '08:00'::time;
+            LOOP -- loop through all hour intervals of the date to find available time slots
+                EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
+                SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
+                WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
+                IF temp = 0 THEN -- this timing has no clashes
+                    hour_array := array_append(hour_array, c_time);
+                END IF;
+                c_time := c_time + interval '1 hour';
+            END LOOP;
+            IF array_length(hour_array, 1) > 0 THEN -- there are possible timings on this date 
+            
+                employee_id := r.eid;
+                name := (SELECT Employees.name FROM Employees WHERE eid = r.eid);
+                working_hours := hours_this_month;
+                day := c_date;
+                available_hours := hour_array;
+                found := TRUE;
+                RETURN NEXT;
+                
+            END IF;
+            c_date := c_date + interval '1 day';
+        END LOOP;
+    END LOOP;
+    CLOSE curs;
 END;
 $$ LANGUAGE plpgsql;
 
