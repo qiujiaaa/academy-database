@@ -338,18 +338,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.number = old.number;
-	if numOfTuple <= 1 then 
-		--terminate
-		raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
-		return null;
-	else
-		--proceed
-		if (tg_op = 'UPDATE') then
-			return new;
-		elseif (tg_op = 'DELETE') then
-			return old;
-		end if;
-	end if;
+	-- if numOfTuple <= 1 then 
+	-- 	--terminate
+	-- 	raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
+	-- 	return null;
+	-- else
+	-- 	--proceed
+	-- 	if (tg_op = 'UPDATE') then
+	-- 		return new;
+	-- 	elseif (tg_op = 'DELETE') then
+	-- 		return old;
+	-- 	end if;
+	-- end if;
+    if (tg_op = 'DELETE') THEN
+        if numOfTuple <= 1 THEN
+            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+            return null;
+        ELSE
+            return old;
+        end if;
+    elseif (tg_op = 'UPDATE') THEN
+        return new;
+    end if;
 end;
 $$ language plpgsql;
 
