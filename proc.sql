@@ -1425,6 +1425,10 @@ DECLARE
     sess_date DATE;
     seat_cap INTEGER;
     no_of_reg INTEGER;
+    old_room_cap INTEGER;
+    old_rid INTEGER;
+    off_seat_cap INTEGER;
+    new_cap INTEGER;
 BEGIN
     SELECT COUNT(*) FROM Rooms WHERE rid = new_rid into room_count;
     --Room does not exists
@@ -1452,7 +1456,14 @@ BEGIN
                     RAISE EXCEPTION 'Number of registration for this session exceeds the seating capacity of new room';
                     RETURN;
                 ELSE
+                    SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO old_rid;
+                    SELECT seating_capacity FROM Rooms WHERE rid = old_rid INTO old_room_cap;
+                    SELECT seating_capacity FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO off_seat_cap;
+                    
+                    new_cap := off_seat_cap + (seat_cap - old_room_cap);
+                    
                     UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+                    UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                 END IF;
             END IF;
         END IF;
@@ -1469,6 +1480,10 @@ DECLARE
     today DATE;
     sess_date DATE;
     regist_count INTEGER;
+    room_id INTEGER;
+    room_seat_cap INTEGER;
+    seat_cap INTEGER;
+    new_cap INTEGER;
 BEGIN
     SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_count;
     IF sess_count = 0 THEN
@@ -1486,8 +1501,15 @@ BEGIN
                 RAISE EXCEPTION 'There is at least one registration for the session';
                 RETURN;
             ELSE
+                SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO room_id;
+                SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
+                SELECT seating_capacity FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO seat_cap;
+                
                 DELETE FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 DELETE FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+                
+                new_cap := seat_cap - room_seat_cap;
+                UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
             END IF;
         END IF;
     END IF;
@@ -1509,6 +1531,11 @@ DECLARE
     sess_count INTEGER;
     area TEXT;
     area_count INTEGER;
+    room_seat_cap INTEGER;
+    seat_cap INTEGER;
+    max_sid INTEGER;
+    new_cap INTEGER;
+    check_start_date DATE;
 BEGIN
     SELECT CURRENT_DATE INTO today;
     SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO deadline;
@@ -1516,44 +1543,66 @@ BEGIN
         RAISE EXCEPTION 'Course offerings registration deadline passed';
         RETURN;
     ELSE
+        SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sid = new_sid INTO sess_count;
+        SELECT MAX(sid) FROM Sessions WHERE course_id = cid AND l_date = launch_date INTO max_sid;
+        
+        IF max_sid IS NULL THEN
+            max_sid = 0;
+        END IF;
+        
         --sid already exists
-        SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sid = new_sid into sess_count;
         IF sess_count <> 0 THEN
             RAISE EXCEPTION 'Session number already exists';
             RETURN;
         ELSE
-            SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_start;
-            SELECT end_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_end;
-            SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_reg;
-
-            --Session date is earlier than offering's registration deadline
-            IF new_date < offering_reg THEN
-                RAISE EXCEPTION 'Session date is earlier than registration deadline';
+            --sid must be in increasing order
+            IF new_sid <> (max_sid+1) THEN
+                RAISE EXCEPTION 'New session number is not in increasing order, new sid should be %', max_sid+1;
                 RETURN;
-            ELSE
-                --check that intructor is specialize in that area
-                SELECT course_area FROM Courses WHERE course_id = cid INTO area;
-                SELECT COUNT(*) FROM Specializes WHERE eid = instr_id AND area = course_area INTO area_count;
-
-                IF area_count = 0 THEN
-                    RAISE EXCEPTION 'Instructor is not specialize in this course_area';
+            ELSE 
+                SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_start;
+                SELECT end_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_end;
+                SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_reg;
+                
+                --Session date is earlier than offering's registration deadline
+                IF new_date < offering_reg THEN
+                    RAISE EXCEPTION 'Session date is earlier than registration deadline';
                     RETURN;
-                ELSE
-                    --update if new session date is earlier than offering start date
-                    IF offering_start > new_date THEN
-                        UPDATE Offerings SET start_date = new_date WHERE course_id = cid AND l_date = launch_date;
+                ELSE 
+                    --check that intructor is specialize in that area
+                    SELECT course_area FROM Courses WHERE course_id = cid INTO area;
+                    SELECT COUNT(*) FROM Specializes WHERE eid = instr_id AND area = course_area INTO area_count;
+                    
+                    IF area_count = 0 THEN
+                        RAISE EXCEPTION 'Instructor is not specialize in this course_area';
+                        RETURN;
+                    ELSE 
+                        --get duration from Courses table
+                        SELECT duration FROM Courses WHERE cid = course_id INTO dur; 
+                        
+                        INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
+                        INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
+                        
+                        --seating capacity
+                        SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
+                        SELECT seating_capacity FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO seat_cap;
+                        new_cap := seat_cap + room_seat_cap;
+                        
+                        --update if new session date is earlier than offering start date
+                        IF offering_start > new_date THEN 
+                            UPDATE Offerings SET start_date = new_date, seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
+                            SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO check_start_date;
+                            IF check_start_date <> new_date THEN
+                                RAISE EXCEPTION 'Start date should be at least 10 days after registration deadline';
+                                RETURN;
+                            END IF;
+                        END IF;
+                        
+                        --update if new session date is later than offering end date
+                        IF offering_end < new_date THEN
+                            UPDATE Offerings SET end_date = new_date, seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
+                        END IF;
                     END IF;
-
-                    --update if new session date is later than offering end date
-                    IF offering_end < new_date THEN
-                        UPDATE Offerings SET end_date = new_date WHERE course_id = cid AND l_date = launch_date;
-                    END IF;
-
-                    --get duration from Courses table
-                    SELECT duration FROM Courses WHERE cid = course_id INTO dur;
-
-                    INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
-                    INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
                 END IF;
             END IF;
         END IF;
