@@ -131,7 +131,7 @@ Constraints not satisfied
 - Total participation constraint of Instructors with respect to Specializes
 */
 create table Specializes (
-    eid            integer references Instructors,
+    eid            integer references Instructors on delete cascade,
     course_area    text references Course_areas,
     primary key(eid, course_area)
 );
@@ -184,9 +184,9 @@ create table Sessions (
     course_id       integer,
     launch_date     date,
     sid             integer,
-    start_time      time,
-    end_time        time,
-    date            date,
+    start_time      time not null,
+    end_time        time not null,
+    date            date not null,
     primary key (course_id, launch_date, sid),
     foreign key (course_id, launch_date) references Offerings (course_id, launch_date)
 );
@@ -205,7 +205,7 @@ create table Cancels (
     cust_id             integer,
     date                date,
     refund_amt          numeric,
-    package_credit      boolean,
+    package_credit      boolean not null,
     primary key (course_id, launch_date, sid, cust_id, date),
     foreign key (cust_id) references Customers (cust_id),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
@@ -245,8 +245,8 @@ create table Conducts (
     course_id       integer,
     launch_date     date,
     sid             integer,
-    rid             integer,
-    eid             integer,
+    rid             integer not null,
+    eid             integer not null,
     primary key (course_id, launch_date, sid),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
     foreign key (rid) references Rooms (rid),
