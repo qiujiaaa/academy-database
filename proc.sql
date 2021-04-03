@@ -1280,6 +1280,77 @@ END
 $$ LANGUAGE plpgsql;
 
 --pay_salary (25)
+create or replace function pay_salary() -- PT (numWorkDays & monthly salary null), FT (numWorkHours & hourly rate null) 
+returns table(empId int, empName text, empStatus text, numWorkDays int, numWorkHours int, rate int, monthlySalary int, amountPaid int) as $$
+declare
+	curs cursor for (select * from Employees order by eid);
+	r record;
+	joinDate date;
+	departDate date;
+	firstWorkDay int;
+	lastWorkDay int;
+	paymentMonth int;
+	paymentYear int;
+	joinMonth int;
+	joinYear int;
+	departMonth int;
+	departYear int;
+	numDaysInMonth int;
+begin
+	loop
+		fetch curs into r;
+		exit when not found;
+		empId := r.eid;
+		empName := r.name;
+		if r.eid in (select eid from Full_time_Emp) then -- hourlyrate and workhours null 
+			empStatus := 'full-time';
+			select join_date into joinDate from Employees where eid = r.eid;
+			select extract(month from current_date)::integer into paymentMonth;
+			select extract(year from current_date)::integer into paymentYear;
+			select extract(month from joinDate)::integer into joinMonth;
+			select extract(month from joinDate)::integer into joinYear;
+			if joinMonth = paymentMonth and joinYear = paymentYear then -- first day of work = day of joined date
+				select extract(day from joinDate)::integer into firstWorkDay;
+			else -- first day of work = 1
+				firstWorkDay := 1;
+			end if;
+			select depart_date into departDate from Employees where eid = r.eid; 
+			select extract(month from departDate)::integer into departMonth;
+			select extract(year from departDate)::integer into departYear;
+			if departMonth = paymentMonth and departYear = paymentYear then
+				select extract(day from departDate)::integer into lastWorkDay;
+			else
+				select extract(day from current_date)::integer into lastWorkDay; -- number of days in the month
+			end if;
+			numWorkDays := lastWorkDay - firstWorkDay + 1;
+			numWorkHours := null;
+			rate := null;
+			select monthly_salary into monthlySalary from Full_time_Emp where eid = r.eid;
+			select extract(day from current_date)::integer into numDaysInMonth;
+			amountPaid := monthlySalary * (numWorkDays / numDaysInMonth);
+			insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (empId, current_date, amountPaid, numWorkHours, numWorkDays);
+			return next;
+		else -- part time instructor, monthly salary and numWorkDays null
+			empStatus := 'part-time';
+			numWorkDays := null;
+			with 
+			sids as (select sid from Conducts where eid = r.eid)
+			select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions where sid in (sids);
+			select hourly_rate into rate from Part_time_Emp where eid = r.eid;
+			if numWorkHours is null then
+				numWorkHours := 0;
+				amountPaid := 0;
+			else
+				amountPaid := rate * numWorkHours;
+			end if;
+			monthlySalary := null;
+			insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (empId, current_date, amountPaid, numWorkHours, null);
+			return next;
+		end if;
+	end loop;
+	close curs;
+end;
+$$ language plpgsql;
 
 --promote_courses (26)
 
