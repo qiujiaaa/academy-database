@@ -1509,7 +1509,8 @@ declare
 	departYear int;
 	numDaysInMonth int;
 begin
-	loop
+	open curs;
+    loop
 		fetch curs into r;
 		exit when not found;
 		empId := r.eid;
@@ -1545,9 +1546,8 @@ begin
 		else -- part time instructor, monthly salary and numWorkDays null
 			empStatus := 'part-time';
 			numWorkDays := null;
-			with 
-			sids as (select sid from Conducts where eid = r.eid)
-			select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions where sid in (sids);
+			with table1 as (select * from Conducts where eid = r.eid)
+			select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions as S where S.course_id in (select course_id from table1) and S.launch_date in (select launch_date from table1) and S.sid in (select sid from table1); 
 			select hourly_rate into rate from Part_time_Emp where eid = r.eid;
 			if numWorkHours is null then
 				numWorkHours := 0;
