@@ -140,7 +140,7 @@ create table Courses (
     title          text not null unique,
     description    text,
     course_area    text not null references Course_areas,
-    duration       integer
+    duration       integer not null
 );
 
 /*
@@ -154,7 +154,7 @@ create table Offerings (
     launch_date                   date,
     fees                          numeric not null,
     target_number_registrations   integer not null,
-    registration_deadline         date,
+    registration_deadline         date not null,
     start_date                    date,
     end_date                      date, 
     eid                           integer not null references Administrators,
@@ -174,8 +174,8 @@ create table Rooms (
 
 /*
 Constraints not satisfied:
-- The earliest session can start at 9am and the latest session (for each day) must end by 6pm, and no sessions are conducted between 12pm to 2pm
-- No two sessions for the same course offering can be conducted on the same day and at the same time.
+- The earliest session can start at 9am and the latest session (for each day) must end by 6pm, and no sessions are conducted between 12pm to 2pm (done).
+- No two sessions for the same course offering can be conducted on the same day and at the same time. (done).
 */
 create table Sessions (
     course_id       integer,
@@ -208,10 +208,6 @@ create table Cancels (
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
-/*
-Constraints not satisfied:
-- The registration deadline for a course offering must be at least 10 days before its start date.
-*/
 create table Registers (
     course_id       integer,
     launch_date     date,
@@ -219,7 +215,7 @@ create table Registers (
     number          text,
     date            date,
     primary key (course_id, launch_date, sid, number, date),
-    foreign key (number) references Credit_cards (number),
+    foreign key (number) references Owns (number),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
@@ -240,7 +236,7 @@ create table Redeems (
 Constraints not satisfied:
 - total participation constraint of Sessions with respect to Conducts not enforced.
 - cannot check room is conducted at most one course Session at any time.
-- cannot check no two sessions for the same course offering can be conducted on the same day and at the same time
+- cannot check no two sessions for the same course offering can be conducted on the same day and at the same time. (done)
 */
 create table Conducts (
     course_id       integer,

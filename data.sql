@@ -94,21 +94,21 @@ insert into Buys (date, num_remaining_redemptions, package_id, number) values ('
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2022-01-21', 12, 3, '374283312104573');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-07-15', 3, 4, '6759274606121255374');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-02', 8, 5, '5018681020026476334');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-09-05', 17, 6, '3542502207619705');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-09-05', 7, 6, '3542502207619705');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-04', 0, 7, '374283174987222');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-06', 11, 8, '5344807003529486');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-06', 5, 8, '5344807003529486');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-10-21', 2, 9, '4175003665378449');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-02', 3, 10, '3531724438465020');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-11-25', 1, 11, '3530018806140112');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-10-27', 1, 12, '6759274606121255374');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-08-29', 7, 13, '4041370974024');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-04', 0, 14, '56022292947227624');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-04', 3, 14, '56022292947227624');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2022-01-01', 7, 15, '3531724438465020');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-08-31', 1, 16, '564182540168178440');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-11', 1, 17, '201880497763070');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-26', 13, 18, '564182540168178440');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-26', 16, 19, '560222549646904780');
-insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-03-20', 4, 20, '560222549646904780');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-26', 6, 19, '560222549646904780');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-03-20', 2, 20, '560222549646904780');
 
 --populate Employees table
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (1, 'Galen', '429 Parkside Junction', 'gyepiskopov0@google.com.au', '2495996139', '2010-09-11', null);
@@ -368,19 +368,19 @@ insert into Specializes (eid, course_area) values (49, 'Computer Security');
 insert into Specializes (eid, course_area) values (50, 'Operating Systems');
 
 -- populate Courses
-insert into Courses (course_id, title, description, course_area, duration) values (1, 'Data Structures and Algorithms', 'It continues the introduction and emphasises object-oriented programming with application to complex data structures.', 'Algorithms', 100);
-insert into Courses (course_id, title, description, course_area, duration) values (2, 'Introduction to Information Security', 'This module serves as an introductory module on information security.', 'Computer Security', 90);
-insert into Courses (course_id, title, description, course_area, duration) values (3, 'Programming Methodology', 'It explores two modern programming paradigms, object-oriented programming and functional programming.', 'Algorithms', null);
-insert into Courses (course_id, title, description, course_area, duration) values (4, 'Database Systems', 'The aim of this module is to introduce the fundamental concepts and techniques necessary for the understanding and practice of design and implementation of database applications and of the management of data with relational database management systems.', 'Database Systems', null);
-insert into Courses (course_id, title, description, course_area, duration) values (5, 'Introduction to Computer Networks', null, 'Networking', 95);
-insert into Courses (course_id, title, description, course_area, duration) values (6, 'Introduction to Operating Systems', null, 'Operating Systems', 100);
-insert into Courses (course_id, title, description, course_area, duration) values (7, 'Software Engineering Project', null, 'Software Engineering', null);
-insert into Courses (course_id, title, description, course_area, duration) values (8, 'Parallel Computing', 'The aim of this module is to provide an introduction to the field of parallel computing with hands-on parallel programming experience on real parallel machines.', 'Parallel Computing', 120);
-insert into Courses (course_id, title, description, course_area, duration) values (9, 'Operating Systems Design and Pragmatics', 'This module builds upon the conceptual foundation formed and extends it to the study of real-life operating systems.', 'Software Engineering', 120);
-insert into Courses (course_id, title, description, course_area, duration) values (10, 'Introduction to Artificial Intelligence', 'The module introduces the basic concepts in search and knowledge representation as well as to a number of sub-areas of artificial intelligence.', 'AI', 100);
-insert into Courses (course_id, title, description, course_area, duration) values (11, 'Machine Learning', 'This module introduces basic concepts and algorithms in machine learning and neural networks.', 'Machine Learning', 80);
-insert into Courses (course_id, title, description, course_area, duration) values (12, 'Probability and Statistics', 'Basic concepts of probability, conditional probability, independence, random variables, joint and marginal distributions, mean and variance, some common probability distributions, sampling distributions, estimation and hypothesis testing based on a normal population.', 'Statistics', 85);
-insert into Courses (course_id, title, description, course_area, duration) values (13, 'Calculus for Computing', 'This module provides a basic foundation for calculus and its related subjects required by computing students.', 'Calculus', 85);
+insert into Courses (course_id, title, description, course_area, duration) values (1, 'Data Structures and Algorithms', 'It continues the introduction and emphasises object-oriented programming with application to complex data structures.', 'Algorithms', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (2, 'Introduction to Information Security', 'This module serves as an introductory module on information security.', 'Computer Security', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (3, 'Programming Methodology', 'It explores two modern programming paradigms, object-oriented programming and functional programming.', 'Algorithms', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (4, 'Database Systems', 'The aim of this module is to introduce the fundamental concepts and techniques necessary for the understanding and practice of design and implementation of database applications and of the management of data with relational database management systems.', 'Database Systems', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (5, 'Introduction to Computer Networks', null, 'Networking', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (6, 'Introduction to Operating Systems', null, 'Operating Systems', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (7, 'Software Engineering Project', null, 'Software Engineering', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (8, 'Parallel Computing', 'The aim of this module is to provide an introduction to the field of parallel computing with hands-on parallel programming experience on real parallel machines.', 'Parallel Computing', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (9, 'Operating Systems Design and Pragmatics', 'This module builds upon the conceptual foundation formed and extends it to the study of real-life operating systems.', 'Software Engineering', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (10, 'Introduction to Artificial Intelligence', 'The module introduces the basic concepts in search and knowledge representation as well as to a number of sub-areas of artificial intelligence.', 'AI', 2);
+insert into Courses (course_id, title, description, course_area, duration) values (11, 'Machine Learning', 'This module introduces basic concepts and algorithms in machine learning and neural networks.', 'Machine Learning', 4);
+insert into Courses (course_id, title, description, course_area, duration) values (12, 'Probability and Statistics', 'Basic concepts of probability, conditional probability, independence, random variables, joint and marginal distributions, mean and variance, some common probability distributions, sampling distributions, estimation and hypothesis testing based on a normal population.', 'Statistics', 4);
+insert into Courses (course_id, title, description, course_area, duration) values (13, 'Calculus for Computing', 'This module provides a basic foundation for calculus and its related subjects required by computing students.', 'Calculus', 4);
 
 -- populate Offerings
 insert into Offerings(course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) values (1, '2020-06-09', 500.50, 90, '2020-08-01', '2020-08-15', '2020-11-30', 14, 100);
@@ -485,6 +485,11 @@ insert into Registers(course_id, launch_date, sid, number, date) values (8, '201
 insert into Registers(course_id, launch_date, sid, number, date) values (13, '2020-08-14', 2, '4175003665378449', '2020-09-13');
 insert into Registers(course_id, launch_date, sid, number, date) values (13, '2020-08-14', 2, '374283174987222', '2020-09-14');
 insert into Registers(course_id, launch_date, sid, number, date) values (13, '2020-08-14', 2, '201880497763070', '2020-09-14');
+insert into Registers(course_id, launch_date, sid, number, date) values (9, '2020-01-01', 1, '3567052898252853', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (9, '2020-01-01', 1, '5018681020026476334', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (9, '2020-01-01', 1, '3531724438465020', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (1, '2020-01-01', 1, '3531724438465020', '2020-08-01');
+insert into Registers(course_id, launch_date, sid, number, date) values (1, '2020-01-01', 1, '5018377800024433', '2020-08-01');
 
 -- populate Redeems
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 1, '2021-04-26', 19, '560222549646904780', '2021-07-18');
@@ -492,7 +497,7 @@ insert into Redeems(course_id, launch_date, sid, date, package_id, number, redee
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 1, '2021-05-26', 18, '564182540168178440', '2021-07-18');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-04-06', 8, '5344807003529486', '2021-07-18');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-04-11', 17, '201880497763070', '2021-07-19');
-insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-03-20', 20, '560222549646904780', '2021-07-18');
+insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (9, '2021-07-17', 2, '2021-05-04', 14, '56022292947227624', '2021-07-18');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 1, '2021-05-24', 1, '4175003665378449', '2021-06-07');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 1, '2021-05-26', 18, '564182540168178440', '2021-06-08');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 2, '2021-04-06', 8, '5344807003529486', '2021-06-10');
@@ -505,8 +510,8 @@ insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, pack
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 8, '2020-08-26', 722.70, false);
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 1, '2020-09-01', 722.70, false);
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (5, '2019-08-25', 2, 15, '2020-09-03', 722.70, false);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 1, '2021-06-15', 545.40, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 7, '2021-06-10', 545.40, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 3, '2021-07-24', 722.70, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 16, '2021-07-23', 722.70, true);
-insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 7, '2021-07-27', 722.70, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 1, '2021-06-15', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (6, '2021-06-06', 1, 7, '2021-06-10', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 3, '2021-07-24', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 16, '2021-07-23', 0, true);
+insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (9, '2021-07-17', 1, 7, '2021-07-27', 0, true);
