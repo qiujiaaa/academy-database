@@ -281,6 +281,107 @@ CREATE TRIGGER offering_start_end_date
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
+--Total participation constraint for Customers & Owns (before update & delete)
+create or replace function owns_customers_func() 
+returns trigger as $$
+declare
+	numOfTuple int;
+begin
+	select count(*) into numOfTuple from Owns where Owns.cust_id = old.cust_id;
+	if numOfTuple <= 1 then 
+		--terminate
+		raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
+		return null;
+	else
+		--proceed
+		if (tg_op = 'UPDATE') then
+			return new;
+		elseif (tg_op = 'DELETE') then
+			return old;
+		end if;
+	end if;
+end;
+$$ language plpgsql;
+
+drop trigger if exists owns_customers_trigger on Owns;
+create trigger owns_customers_trigger
+before update or delete on Owns
+for each row execute function owns_customers_func();
+
+--Total participation constraint for Customers & Owns (after insert & update)
+create or replace function owns_customers_func2()
+returns trigger as $$
+declare
+    numOfTuple int;
+begin
+    select count(*) into numOfTuple from Owns where Owns.cust_id = new.cust_id;
+    if numOfTuple < 1 then
+        --TODO: terminate check return type
+        raise exception 'Did not insert/update into Owns table, therefore terminated';
+    else
+        --proceed
+        return new;
+    end if; 
+end;
+$$ language plpgsql;
+
+drop trigger if exists owns_customers_trigger2 on Customers;
+create constraint trigger owns_customers_trigger2
+after insert or update on Customers
+deferrable initially deferred
+for each row execute function owns_customers_func2();
+
+--Total participation constraint for Credit_cards & Owns (before update & delete)
+create or replace function owns_cc_func() 
+returns trigger as $$
+declare
+	numOfTuple int;
+begin
+	select count(*) into numOfTuple from Owns where Owns.number = old.number;
+	if numOfTuple <= 1 then 
+		--terminate
+		raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
+		return null;
+	else
+		--proceed
+		if (tg_op = 'UPDATE') then
+			return new;
+		elseif (tg_op = 'DELETE') then
+			return old;
+		end if;
+	end if;
+end;
+$$ language plpgsql;
+
+drop trigger if exists owns_cc_trigger on Owns;
+create trigger owns_cc_trigger
+before update or delete on Owns
+for each row execute function owns_cc_func();
+
+--Total participation constraint for Credit_cards & Owns (after insert & update)
+create or replace function owns_cc_func2()
+returns trigger as $$
+declare
+    numOfTuple int;
+begin
+    select count(*) into numOfTuple from Owns where Owns.number = new.number;
+    if numOfTuple < 1 then
+        --TODO: terminate check return type
+        raise exception 'Did not insert/update into Owns table, therefore terminated';
+    else
+        --proceed
+        return new;
+    end if; 
+end;
+$$ language plpgsql;
+
+drop trigger if exists owns_cc_trigger2 on Credit_cards;
+create constraint trigger owns_cc_trigger2
+after insert or update on Credit_cards
+deferrable initially deferred
+for each row execute function owns_cc_func2();
+
+/* ------------------------------- functionalities -------------------------------*/
 -- start of jonathan functionality.
 -- For each course offered by the company, a customer can register for at most one of its sessions.
 CREATE OR REPLACE FUNCTION register_one_course_session()
@@ -620,7 +721,7 @@ BEGIN
                 EXIT WHEN NOT FOUND;
                 IF r.registration_deadline > d_date THEN
                     RAISE EXCEPTION 'Administrator is still handling some course offering';
-                    RETURN; --Is this correct?
+                    RETURN;
                 END IF;
                 
                 UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
@@ -666,10 +767,41 @@ END;
 $$ LANGUAGE plpgsql;
 
 --add_customer (3)
+--add_customer (insert into Credit_cards & Owns as well)
+create or replace function add_customer(name text, address text, number text, email text, ccnumber text, ccexpirydate date, cvv text)
+returns void as $$
+declare
+	numCustomers int;
+begin
+	select count(*) into numCustomers from Customers;
+	numCustomers := numCustomers + 1;
+	if ccexpirydate is not null and cvv is not null then
+        insert into Customers (phone, address, cust_id, name, email) values (number, address, numCustomers, name, email);
+		insert into Credit_cards (expiry_date, number, CVV) values (ccexpirydate, ccnumber, cvv);
+        insert into Owns (from_date, number, cust_id) values (current_date, ccnumber, numCustomers);
+	else
+		raise exception 'Credit card expiry date and CVV cannot be null, Customer, Credit Card & Owns not inserted';
+	end if;
+end;
+$$ language plpgsql;
 
 
 --update_credit_card (4)
-
+--update_credit_card (update Owns as well)
+-- TODO: clarify which card to update, for now its the latest date
+create or replace function update_credit_card(cid int, ccNumber text, ccExpiryDate date, newCVV text)
+returns void as $$
+declare
+    ccNumToBeUpdated text;
+    latestDate date;
+begin
+    select max(from_date::date) into latestDate from Owns where cust_id = cid;
+    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date::date = latestDate::date;
+    update Credit_cards set expiry_date::date = ccExpiryDate::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    --TODO: update Owns as well?
+    update Owns set from_date::date = current_date::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+end;
+$$ language plpgsql;
 
 --add_course (5)
 CREATE OR REPLACE FUNCTION
@@ -736,11 +868,40 @@ $$ LANGUAGE plpgsql;
 
 --get_available_rooms (9)
 
+
+
+
 --add_course_offering (10)
 
 --add_course_package (11)
+-- if not valid raise exception i.e name = (''/null), numFreeSessions = (negative/null), startDate > endDate, startDate = null, endDate = null, price = (negative/null) 
+create or replace function add_course_package(packageName text, numberOfFreeCourseSessions int, startDate date, endDate Date, price int)
+returns void as $$
+declare
+	numPackages int;
+begin
+	if packageName = '' or null then 
+		raise exception 'Package name cannot be null or empty';
+	elsif numberOfFreeCourseSessions < 0 or null then
+		raise exception 'Number of free course sessions cannot be negative';
+	elsif startDate::date > endDate::date or startDate::date = null or endDate::date = null then
+		raise exception 'Start date cannot be later than end date';
+	elsif price < 0 or null then
+		raise exception 'Price cannot be negative';
+	else
+		select count(*) into numPackages from Course_packages;
+		numPackages := numPackages + 1;
+		insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (price, packageName, startDate, numberOfFreeCourseSessions, numPackages, endDate);
+	end if;
+end;
+$$ language plpgsql;
 
 --get_available_course_package (12)
+-- returns the course packages that are available from current date and havent expired yet
+create or replace function get_available_course_packages() 
+returns table(packageName text, numberOfFreeCourseSessions int, endDate date, price int) as $$	
+	select name, num_free_registrations, sale_end_date, price from Course_packages where current_date::date >= sale_start_date::date and current_date <= sale_end_date::date;
+$$ language sql;
 
 --buy_course_package (13)
 
