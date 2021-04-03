@@ -45,7 +45,7 @@ create table Buys (
     number                      text,
     primary key (date, package_id, number),
     foreign key (package_id) references Course_packages(package_id),
-    foreign key (number) references Credit_cards(number),
+    foreign key (number) references Credit_cards(number) on update cascade,
     check (num_remaining_redemptions >= 0)    
 );
 
@@ -218,7 +218,7 @@ create table Registers (
     number          text,
     date            date,
     primary key (course_id, launch_date, sid, number, date),
-    foreign key (number) references Owns (number),
+    foreign key (number) references Owns (number) on update cascade,
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
@@ -231,7 +231,7 @@ create table Redeems (
     number          text,
     redeems_date    date,
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
-    foreign key (date, package_id, number) references Buys (date, package_id, number),
+    foreign key (date, package_id, number) references Buys (date, package_id, number) on update cascade,
     primary key (course_id, launch_date, sid, date, package_id, number, redeems_date)
 );
 
