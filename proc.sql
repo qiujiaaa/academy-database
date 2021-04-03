@@ -759,64 +759,63 @@ DECLARE
     rec1 RECORD;
     current_instructor INTEGER;
 BEGIN
-    --check start date is not greater than end date
-    IF (start_date > end_date) THEN
-        RAISE EXCEPTION 'start date is earlier than end date!';
-    END IF;
-    --check if course_id inputted is valid.
-    SELECT count(*) INTO count
-    FROM Courses C
-    WHERE C.course_id = cid;
-    IF count = 0 THEN
-        RAISE EXCEPTION 'Invalid course_id inputted in this function!';
-    END IF;
-    -- get course id into a table to use it
-    DROP TABLE IF EXISTS TABLE71 CASCADE;
-    CREATE TABLE TABLE71( course_id INT);
-    INSERT INTO TABLE71(course_id) VALUES (cid);
-    -- find eid (instructors that specializes in teaching course teach course)
-    CREATE OR REPLACE VIEW R71 AS
-    SELECT S.eid
-    FROM Specializes S, Courses C, TABLE71 T
-    WHERE S.course_area = C.course_area
-    AND C.course_id = T.course_id;
+--    --check start date is not greater than end date
+--    IF (start_date > end_date) THEN
+--        RAISE EXCEPTION 'start date is earlier than end date!';
+--    END IF;
+--    --check if course_id inputted is valid.
+--    SELECT count(*) INTO count
+--    FROM Courses C
+--    WHERE C.course_id = cid;
+--    IF count = 0 THEN
+--        RAISE EXCEPTION 'Invalid course_id inputted in this function!';
+--    END IF;
+--    -- get course id into a table to use it
+--    DROP TABLE IF EXISTS TABLE71 CASCADE;
+--    CREATE TABLE TABLE71( course_id INT);
+--    INSERT INTO TABLE71(course_id) VALUES (cid);
+--    -- find eid (instructors that specializes in teaching course teach course)
+--    EXECUTE 'CREATE OR REPLACE VIEW R71 AS '
+--    || 'SELECT S.eid FROM Specializes S, Courses C '
+--    || 'WHERE S.course_area = C.course_area AND C.course_id = $1'
+--    USING cid;
     -- find eid with name (employees) and total teaching hours this month (Pay slips)
-    CREATE OR REPLACE VIEW R72 AS
-    SELECT R.eid, E.name, P.num_work_hours
-    FROM R71 R, Employees E, Pay_Slips P
-    WHERE R.eid = E.eid AND E.eid = P.eid;
-
-
-    DROP TABLE IF EXISTS Curr_Day CASCADE;
-    CREATE TABLE Curr_Day(day DATE);
-
-    DROP TABLE IF EXISTS TABLE72 CASCADE;
-    CREATE TABLE TABLE72(eid INT);
-    --loop for each specialized employee
-
-    FOR rec1 IN SELECT * FROM R71
-    LOOP
-        temp_array := avail_hours;
-        current_instructor := rec1.eid;
-
-        INSERT INTO TABLE72(eid) VALUES(current_instructor);
-        -- loop for start date to end date
-
-        FOR i IN 0..CAST(((end_date - start_date) + 1) AS INTEGER)
-        LOOP
-            current_day = start_date + i;
-            INSERT INTO Curr_Day(day) VALUES (current_day);
-            CREATE OR REPLACE VIEW R72 AS
-            SELECT S.start_time, S.end_time
-            FROM Conducts C, Sessions S, TABLE72 T, Curr_Day CD
-            WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
-            AND C.eid = T.eid
-            AND S.date = CD.day;
-            DROP VIEW R72;
-            DELETE FROM Curr_Day;
-        END LOOP;
-        DELETE FROM TABLE72;
-    END LOOP;
+--    CREATE OR REPLACE VIEW R72 AS
+--    SELECT R.eid, E.name, P.num_work_hours
+--    FROM R71 R, Employees E, Pay_Slips P
+--    WHERE R.eid = E.eid AND E.eid = P.eid;
+--
+--
+--    DROP TABLE IF EXISTS Curr_Day CASCADE;
+--    CREATE TABLE Curr_Day(day DATE);
+--
+--    DROP TABLE IF EXISTS TABLE72 CASCADE;
+--    CREATE TABLE TABLE72(eid INT);
+--    --loop for each specialized employee
+--
+--    FOR rec1 IN SELECT * FROM R71
+--    LOOP
+--        temp_array := avail_hours;
+--        current_instructor := rec1.eid;
+--
+--        INSERT INTO TABLE72(eid) VALUES(current_instructor);
+--        -- loop for start date to end date
+--
+--        FOR i IN 0..CAST(((end_date - start_date) + 1) AS INTEGER)
+--        LOOP
+--            current_day = start_date + i;
+--            INSERT INTO Curr_Day(day) VALUES (current_day);
+--            CREATE OR REPLACE VIEW R72 AS
+--            SELECT S.start_time, S.end_time
+--            FROM Conducts C, Sessions S, TABLE72 T, Curr_Day CD
+--            WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
+--            AND C.eid = T.eid
+--            AND S.date = CD.day;
+--            DROP VIEW R72;
+--            DELETE FROM Curr_Day;
+--        END LOOP;
+--        DELETE FROM TABLE72;
+--    END LOOP;
     -- array of available hours.
 END;
 $$ LANGUAGE plpgsql;
@@ -837,21 +836,16 @@ BEGIN
         RAISE EXCEPTION 'No session can be conducted after 6PM!';
     END IF;
 
-    --insert variables into table to use it
-    DROP TABLE IF EXISTS TABLE8;
-    CREATE TABLE TABLE8( start_hour TIME, end_hour TIME, session_date DATE);
-    INSERT INTO TABLE8(start_hour, end_hour, session_date) VALUES(start_hour,end_hour, session_date);
-
     RETURN QUERY
     SELECT R.rid
     FROM Rooms R
     EXCEPT
     SELECT C.rid
-    FROM Conducts C, Sessions S, TABLE8 T
+    FROM Conducts C, Sessions S
     WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
-    AND T.session_date = S.date
-    AND ((S.start_time >= T.start_hour AND T.end_hour > S.start_time)
-    OR (T.start_hour >= S.start_time AND S.end_time > T.start_hour));
+    AND session_date = S.date
+    AND ((S.start_time >= start_hour AND end_hour > S.start_time)
+    OR (start_hour >= S.start_time AND S.end_time > start_hour));
 END;
 $$ LANGUAGE plpgsql;
 
