@@ -515,11 +515,13 @@ CREATE TRIGGER same_offering_session_timing
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION same_offering_session_timing();
 
---check cancels is cancelling a legitimate register or redeem
+--check cancels is cancelling a legitimate register or redeem, delete entry from register/redeem
 CREATE OR REPLACE FUNCTION cancel_legitimate_check()
 RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
+    temp_1 TEXT;
+    temp_2 TEXT;
 BEGIN
     SELECT COUNT(*) INTO count
     FROM Registers R1, Redeems R2, Owns O
@@ -528,8 +530,20 @@ BEGIN
     IF COUNT = 0 THEN
         RAISE NOTICE 'Cancel is not cancelling a legitimate register or redeem';
         RETURN NULL;
-    ELSE
+    ELSE 
+        -- do deletion
+        SELECT number INTO temp_1 
+        FROM Registers natural join Owns
+        WHERE cust_id = NEW.cust_id AND course_id = NEW.course_id AND launch_date = NEW.launch_date;
+        SELECT number INTO temp_2 
+        FROM Redeems natural join Owns
+        WHERE cust_id = NEW.cust_id AND course_id = NEW.course_id AND launch_date = NEW.launch_date;
+        IF temp_1 IS NOT NULL THEN
+            DELETE FROM Registers WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_1;
+        ELSE 
+            DELETE FROM Redeems WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_2;
         RETURN NEW;
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -785,7 +799,7 @@ begin
 end;
 $$ language plpgsql;
 
-
+/*
 --update_credit_card (4)
 --update_credit_card (update Owns as well)
 -- TODO: clarify which card to update, for now its the latest date
@@ -802,6 +816,7 @@ begin
     update Owns set from_date::date = current_date::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
 end;
 $$ language plpgsql;
+*/
 
 --add_course (5)
 CREATE OR REPLACE FUNCTION
@@ -1060,9 +1075,9 @@ BEGIN
         IF days < 7 THEN 
             RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
         ELSE
-            DELETE FROM Registers WHERE course_id = cid AND launch_date = cdate and number = cc;
             SELECT fees INTO amt FROM Offerings WHERE course_id = cid AND launch_date = cdate;
             INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, amt * 0.9, FALSE);
+            -- trigger will delete from register
         END IF;
     ELSE 
         -- add 1 session into buys
@@ -1074,12 +1089,12 @@ BEGIN
         IF days < 7 THEN 
             RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
         ELSE
-            DELETE FROM Redeems WHERE course_id = cid AND launch_date = cdate and number = cc;
             SELECT num_remaining_redemptions INTO remaining FROM Buys 
             WHERE date = buy_date AND package_id = package AND number = cc;
             UPDATE Buys SET num_remaining_redemptions = remaining + 1 
             WHERE date = buy_date AND package_id = package AND number = cc;
             INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, 0, TRUE);
+            -- trigger will delete from redeems
         END IF;
     END IF;
 END;
