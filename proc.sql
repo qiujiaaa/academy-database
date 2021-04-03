@@ -543,11 +543,13 @@ CREATE TRIGGER same_offering_session_timing
 BEFORE INSERT OR UPDATE ON Sessions FOR EACH ROW
 EXECUTE FUNCTION same_offering_session_timing();
 
---check cancels is cancelling a legitimate register or redeem
+--check cancels is cancelling a legitimate register or redeem, delete entry from register/redeem
 CREATE OR REPLACE FUNCTION cancel_legitimate_check()
 RETURNS TRIGGER AS $$
 DECLARE
     count INTEGER;
+    temp_1 TEXT;
+    temp_2 TEXT;
 BEGIN
     SELECT COUNT(*) INTO count
     FROM Registers R1, Redeems R2, Owns O
@@ -556,8 +558,20 @@ BEGIN
     IF COUNT = 0 THEN
         RAISE NOTICE 'Cancel is not cancelling a legitimate register or redeem';
         RETURN NULL;
-    ELSE
+    ELSE 
+        -- do deletion
+        SELECT number INTO temp_1 
+        FROM Registers natural join Owns
+        WHERE cust_id = NEW.cust_id AND course_id = NEW.course_id AND launch_date = NEW.launch_date;
+        SELECT number INTO temp_2 
+        FROM Redeems natural join Owns
+        WHERE cust_id = NEW.cust_id AND course_id = NEW.course_id AND launch_date = NEW.launch_date;
+        IF temp_1 IS NOT NULL THEN
+            DELETE FROM Registers WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_1;
+        ELSE 
+            DELETE FROM Redeems WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_2;
         RETURN NEW;
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -830,6 +844,7 @@ begin
 end;
 $$ language plpgsql;
 
+
 --add_course (5)
 CREATE OR REPLACE FUNCTION
 add_course(newTitle TEXT, newDescription TEXT, newArea TEXT, newDuration INTEGER)
@@ -878,23 +893,78 @@ $$ LANGUAGE sql;
 --has been assigned for this month, day (which is within the input date range [start date, end date]), and an array of
 --the available hours for the instructor on the specified day. The output is sorted in ascending order of employee identifier and day,
 --and the array entries are sorted in ascending order of hour.
-DROP FUNCTION IF EXISTS get_available_instructors(integer, date, date);
 CREATE OR REPLACE FUNCTION
 get_available_instructors(cid INT, start_date DATE, end_date DATE)
-RETURNS TABLE(employee_id INT, name TEXT, working_hours INTEGER, day DATE, available_hours INTEGER[]) AS $$
+RETURNS TABLE(employee_id INT, name TEXT, working_hours INTEGER, day DATE, available_hours TIME[]) AS $$
 DECLARE
+    curs CURSOR FOR (SELECT * FROM Specializes NATURAL JOIN Courses WHERE course_id = cid ORDER BY eid);
+    r RECORD;
+    lesson_duration INTEGER;
+    c_date DATE;
+    c_time TIME;
+    hours_this_month INTEGER;
+    found BOOLEAN;
+    hour_array TIME[];
+    temp INTEGER;
 BEGIN
     --check start date is not greater than end date
     IF (start_date > end_date) THEN
-        RAISE EXCEPTION 'start date is earlier than end date!';
+        RAISE EXCEPTION 'Start date is earlier than end date!';
     END IF;
-    --check if course_id inputted is valid.
-    SELECT count(*) INTO count
-    FROM Courses C
-    WHERE C.course_id = cid;
-    IF count = 0 THEN
+    --check if course_id is valid.
+    SELECT count(*) INTO temp FROM Courses C WHERE C.course_id = cid;
+    IF temp = 0 THEN
         RAISE EXCEPTION 'Invalid course_id inputted in this function!';
     END IF;
+
+    SELECT duration INTO lesson_duration FROM Courses WHERE course_id = cid;
+    OPEN curs;
+    LOOP -- loop through all instructors specialising in this course area
+        FETCH curs INTO r;
+        EXIT WHEN NOT FOUND;
+        IF r.eid IS NULL THEN EXIT; END IF;
+        RAISE NOTICE 'eid: %', r.eid;
+        c_date := start_date;
+        found := FALSE;
+        RAISE NOTICE 'YO';
+        -- check the number of hours this month first
+        SELECT COALESCE(sum(duration), 0) INTO hours_this_month FROM Conducts NATURAL JOIN Courses NATURAL JOIN Sessions 
+        WHERE eid = r.eid and DATE_PART('month', date) = DATE_PART('month', c_date);
+        SELECT count(*) INTO temp FROM Part_time_instructors WHERE eid = r.eid;
+        -- is a part timer and this additional lesson will over run 30 hours
+        IF temp = 1 AND hours_this_month + lesson_duration > 30 THEN
+            -- go to first day of next month & check if it is before end date
+            c_date := c_date + interval '1 month';
+            c_date := make_date(DATE_PART('year', c_date), DATE_PART('month', c_date), 1);
+        END IF;
+        LOOP -- loop through all dates to find a date where there is a time slot
+            EXIT WHEN found = TRUE OR c_date > end_date;
+            hour_array := ARRAY[]::TIME[];
+            c_time := '08:00'::time;
+            LOOP -- loop through all hour intervals of the date to find available time slots
+                EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
+                SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
+                WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
+                IF temp = 0 THEN -- this timing has no clashes
+                    hour_array := array_append(hour_array, c_time);
+                END IF;
+                c_time := c_time + interval '1 hour';
+            END LOOP;
+            IF array_length(hour_array, 1) > 0 THEN -- there are possible timings on this date 
+            
+                employee_id := r.eid;
+                name := (SELECT Employees.name FROM Employees WHERE eid = r.eid);
+                working_hours := hours_this_month;
+                day := c_date;
+                available_hours := hour_array;
+                found := TRUE;
+                RETURN NEXT;
+                
+            END IF;
+            c_date := c_date + interval '1 day';
+        END LOOP;
+    END LOOP;
+    CLOSE curs;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1272,9 +1342,9 @@ BEGIN
         IF days < 7 THEN
             RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
         ELSE
-            DELETE FROM Registers WHERE course_id = cid AND launch_date = cdate and number = cc;
             SELECT fees INTO amt FROM Offerings WHERE course_id = cid AND launch_date = cdate;
             INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, amt * 0.9, FALSE);
+            -- trigger will delete from register
         END IF;
     ELSE
         -- add 1 session into buys
@@ -1286,12 +1356,12 @@ BEGIN
         IF days < 7 THEN
             RAISE EXCEPTION 'Cancellation needs to be made at least 7 days before the day of registered session';
         ELSE
-            DELETE FROM Redeems WHERE course_id = cid AND launch_date = cdate and number = cc;
-            SELECT num_remaining_redemptions INTO remaining FROM Buys
+            SELECT num_remaining_redemptions INTO remaining FROM Buys 
             WHERE date = buy_date AND package_id = package AND number = cc;
             UPDATE Buys SET num_remaining_redemptions = remaining + 1
             WHERE date = buy_date AND package_id = package AND number = cc;
             INSERT INTO Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) VALUES (cid, cdate, session, cust, CURRENT_DATE, 0, TRUE);
+            -- trigger will delete from redeems
         END IF;
     END IF;
 END;

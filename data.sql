@@ -23,20 +23,20 @@ insert into Customers (phone, address, cust_id, name, email) values ('3674501285
 --populate Course_packages table
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (5, 'Artificial Intelligence', '2024-01-10', 4, 1, '2020-08-26');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (10, 'Machine Learning', '2023-02-16', 10, 2, '2018-07-28');
-insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (16, 'Cyber Security', '2022-05-05', 12, 3, '2020-02-28');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (16, 'Cyber Security', '2022-05-05', 12, 3, '2021-02-28');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (12, 'Software Engineering', '2023-05-07', 16, 4, '2019-03-10');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (3, 'Database', '2023-01-17', 20, 5, '2019-01-06');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (33, 'Data Structure', '2022-11-15', 7, 6, '2018-09-27');
-insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (333, 'Algorithms', '2024-01-31', 1, 7, '2020-07-05');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (333, 'Algorithms', '2024-01-31', 1, 7, '2021-07-05');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (11, 'Networks', '2023-07-01', 5, 8, '2020-07-29');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (21, 'Operating Systems', '2023-10-09', 9, 9, '2021-03-18');
-insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (43, 'Computer Graphics', '2023-06-16', 15, 10, '2020-11-28');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (43, 'Computer Graphics', '2023-06-16', 15, 10, '2021-11-28');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (76, 'Parallel Computing', '2023-03-26', 2, 11, '2019-10-16');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (30, 'Multimedia', '2023-08-10', 11, 12, '2020-02-20');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (50, 'Programming Languages', '2022-10-13', 10, 13, '2020-03-05');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (53, 'Distributed Systems', '2022-11-20', 17, 14, '2019-02-26');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (45, 'Computer Security', '2023-06-25', 15, 15, '2020-08-26');
-insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (37, 'Computer Games', '2022-12-03', 13, 16, '2020-12-04');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (37, 'Computer Games', '2022-12-03', 13, 16, '2021-12-04');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (43, 'Programming Methodology', '2023-07-29', 19, 17, '2020-05-25');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (11, 'Discrete Structures', '2022-11-20', 16, 18, '2019-08-20');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (10, 'Statistics', '2024-02-27', 9, 19, '2019-04-16');
