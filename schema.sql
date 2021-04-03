@@ -172,7 +172,7 @@ create table Offerings (
 create table Rooms (
     rid                 integer primary key,
     location            text,
-    seating_capacity    integer
+    seating_capacity    integer not null
 );
 
 /*

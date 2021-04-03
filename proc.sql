@@ -281,6 +281,33 @@ CREATE TRIGGER offering_start_end_date
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_end_date();
 
+-- a session must be conducted by a instructor specialising in that area
+CREATE OR REPLACE FUNCTION session_conducted_by_specialized_instructor()
+RETURNS TRIGGER AS $$
+DECLARE
+    temp INTEGER;
+    area TEXT;
+BEGIN
+    SELECT count(*) INTO temp FROM Offerings WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date;
+    IF temp = 0 THEN
+        RAISE NOTICE 'Course Offering does not exist';
+        RETURN NULL;
+    END IF;
+    SELECT course_area INTO area FROM Courses WHERE course_id = NEw.course_id;
+    SELECT count(*) INTO temp FROM Specializes WHERE eid = NEW.eid AND course_area = area;
+    IF temp = 0 THEN
+        RAISE NOTICE 'Instructor is not specializing in this course area';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS session_conducted_by_specialized_instructor ON Conducts;
+CREATE TRIGGER session_conducted_by_specialized_instructor
+BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
+EXECUTE FUNCTION session_conducted_by_specialized_instructor();
+
 --Total participation constraint for Customers & Owns (before update & delete)
 create or replace function owns_customers_func() 
 returns trigger as $$
