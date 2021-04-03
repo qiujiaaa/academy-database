@@ -938,9 +938,88 @@ END;
 $$ LANGUAGE plpgsql;
 
 --get_available_rooms (9)
-
-
-
+create or replace function get_available_rooms(startDate date, endDate date) 
+returns table(roomId int, roomCapacity int, day integer, hours time[]) as $$
+declare	
+	numSessions int;
+	curs cursor for (select * from Rooms order by rid);
+	r record;
+	f record;
+	track time;
+	d date;
+begin
+	if startDate > endDate then
+		raise exception 'Start date cannot be later than end date';
+	else
+		hours := array['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+		if startDate = endDate then
+			select count(*) into numSessions from Sessions where date = startDate;
+			if numSessions = 0 then -- all rooms available for all timings
+				open curs;
+				loop
+					fetch curs into r;
+					exit when not found;
+					roomId := r.rid;
+					roomCapacity := r.seating_capacity;
+					select extract(day from startDate)::integer into day;
+					return next;
+				end loop;
+				close curs;
+			else
+				open curs;
+				loop
+					fetch curs into r;
+					exit when not found;
+					hours := array['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+					roomId := r.rid;
+					roomCapacity := r.seating_capacity;
+					select extract(day from startDate)::integer into day;
+					for f in 
+					(with tempTable as (select * from Conducts as C1 where C1.rid = roomId)
+					select start_time, end_time from Sessions where course_id in (select course_id from tempTable) and launch_date in (select launch_date from tempTable) and sid in (select sid from tempTable) and date = startDate order by start_time) 
+					loop
+						track := f.start_time;
+						loop
+							exit when track = f.end_time;
+							hours := array_remove(hours, track);
+							track := track + '1 hour'::interval;
+						end loop;
+					end loop;
+					return next;
+				end loop;
+				close curs;
+			end if;
+		else 
+		-- diff day
+		for d in select (generate_series(startDate, endDate, '1 day'::interval))::date loop
+			open curs;
+				loop
+					fetch curs into r;
+					exit when not found;
+					hours := array['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+					roomId := r.rid;
+					roomCapacity := r.seating_capacity;
+					select extract(day from d)::integer into day;
+					for f in 
+					(with tempTable as (select * from Conducts as C1 where C1.rid = roomId)
+					select start_time, end_time from Sessions where course_id in (select course_id from tempTable) and launch_date in (select launch_date from tempTable) and sid in (select sid from tempTable) and date = d order by start_time) 
+					loop
+						track := f.start_time;
+						loop
+							exit when track = f.end_time;
+							hours := array_remove(hours, track);
+							track := track + '1 hour'::interval;
+						end loop;
+					end loop;
+					return next;
+				end loop;
+				close curs;
+		end loop;
+			
+		end if;
+	end if;
+end;
+$$ language plpgsql;
 
 --add_course_offering (10)
 
