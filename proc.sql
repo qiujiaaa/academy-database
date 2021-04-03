@@ -916,32 +916,26 @@ BEGIN
         RAISE EXCEPTION 'Input customer_id is invalid!';
     END IF;
 
-    -- get customer id into a table to use it
-    DROP TABLE IF EXISTS TABLE14 CASCADE;
-    CREATE TABLE TABLE14( cust_id INTEGER);
-    INSERT INTO TABLE14(cust_id) VALUES(customer_id);
-    --get the active/partially active course package
-    CREATE OR REPLACE VIEW R141 AS
-    SELECT C.name, B.date, C.num_free_registrations, B.num_remaining_redemptions, B.number, B.package_id
-    FROM Buys B, Owns O, Course_packages C, TABLE14 T
-    WHERE B.number = O.number
-    AND O.cust_id = T.cust_id
-    AND C.package_id = B.package_id LIMIT 1;
-
-    --get information for each redeemed session
-    CREATE OR REPLACE VIEW R142 AS
-    SELECT C.title, S.date, S.start_time
-    FROM Redeems R, R141 RR, Courses C, Sessions S
-    WHERE (R.number = RR.number AND RR.date = R.date AND R.package_id = RR.package_id)
-    AND (R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid)
-    AND C.course_id = S.course_id
-    ORDER BY S.date ASC, start_time ASC;
-
     RETURN QUERY
+    WITH R141 AS (
+        --get the active/partially active course package
+        SELECT C.name, B.date, C.num_free_registrations, B.num_remaining_redemptions, B.number, B.package_id
+        FROM Buys B, Owns O, Course_packages C
+        WHERE B.number = O.number
+        AND O.cust_id = customer_id
+        AND C.package_id = B.package_id LIMIT 1
+    ), R142 AS (
+        --get information for each redeemed session
+        SELECT C.title, S.date, S.start_time
+        FROM Redeems R, R141 RR, Courses C, Sessions S
+        WHERE (R.number = RR.number AND RR.date = R.date AND R.package_id = RR.package_id)
+        AND (R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid)
+        AND C.course_id = S.course_id
+        ORDER BY S.date ASC, start_time ASC
+    )
     SELECT row_to_json(
         ROW(R1.name, R1.date, R1.num_free_registrations, R1.num_remaining_redemptions, ROW(R2.*))
     ) FROM R141 R1, R142 R2;
-
 END;
 $$ LANGUAGE plpgsql;
 
