@@ -42,6 +42,9 @@ insert into Course_packages (price, name, sale_end_date, num_free_registrations,
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (10, 'Statistics', '2024-02-27', 9, 19, '2019-04-16');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (5, 'Calculus', '2023-08-19', 2, 20, '2018-06-04');
 
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (100, 'Computer Security', '2023-08-19', 2, 21, '2018-06-04');
+insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (150, 'Discrete Structures', '2023-08-19', 2, 22, '2018-06-04');
+
 --populate Credit_cards table
 insert into Credit_cards (expiry_date, number, CVV) values ('2022-08-10', '4175003665378449', '946');
 insert into Credit_cards (expiry_date, number, CVV) values ('2023-12-27', '5453645393112118', '200');
@@ -109,6 +112,9 @@ insert into Buys (date, num_remaining_redemptions, package_id, number) values ('
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-26', 13, 18, '564182540168178440');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-04-26', 6, 19, '560222549646904780');
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-03-20', 2, 20, '560222549646904780');
+
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2020-08-20', 2, 21, '4175003665378449');
+insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2020-08-20', 2, 22, '560222549646904780');
 
 --populate Employees table
 insert into Employees (eid, name, address, email, phone, join_date, depart_date) values (1, 'Galen', '429 Parkside Junction', 'gyepiskopov0@google.com.au', '2495996139', '2010-09-11', null);
@@ -502,6 +508,9 @@ insert into Redeems(course_id, launch_date, sid, date, package_id, number, redee
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 1, '2021-05-26', 18, '564182540168178440', '2021-06-08');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 2, '2021-04-06', 8, '5344807003529486', '2021-06-10');
 insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (6, '2021-06-06', 2, '2021-04-26', 19, '560222549646904780', '2021-06-11');
+
+insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (13, '2020-08-14', 1, '2020-08-20', 21, '4175003665378449', '2020-09-14');
+insert into Redeems(course_id, launch_date, sid, date, package_id, number, redeems_date) values (13, '2020-08-14', 1, '2020-08-20', 22, '560222549646904780', '2020-08-25');
 
 -- populate Cancels
 insert into Cancels(course_id, launch_date, sid, cust_id, date, refund_amt, package_credit) values (1, '2020-06-09', 1, 1, '2020-06-21', 450.45, false);
