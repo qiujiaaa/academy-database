@@ -427,6 +427,7 @@ insert into Rooms(rid, location, seating_capacity) values (19, '03-04', 100);
 insert into Rooms(rid, location, seating_capacity) values (20, '03-05', 100);
 
 --populate Sessions
+BEGIN TRANSACTION;
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (1, '2020-06-09', 1, '09:00', '11:00', '2020-08-15');
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (1, '2020-06-09', 2, '09:00', '11:00', '2020-11-30');
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (1, '2020-01-01', 1, '09:00', '11:00', '2020-02-01');
@@ -453,6 +454,7 @@ insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) va
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (13, '2020-08-14', 2, '14:00', '18:00', '2021-03-30');
 
 --populate Conducts
+
 insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-06-09', 1, 1, 2);
 insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-06-09', 2, 1, 5);
 insert into Conducts(course_id, launch_date, sid, rid, eid) values (1, '2020-01-01', 1, 3, 13);
@@ -477,6 +479,7 @@ insert into Conducts(course_id, launch_date, sid, rid, eid) values (11, '2023-02
 insert into Conducts(course_id, launch_date, sid, rid, eid) values (11, '2023-02-14', 2, 13, 10);
 insert into Conducts(course_id, launch_date, sid, rid, eid) values (13, '2020-08-14', 1, 20, 46);
 insert into Conducts(course_id, launch_date, sid, rid, eid) values (13, '2020-08-14', 2, 20, 40);
+COMMIT;
 
 --populate Registers
 insert into Registers(course_id, launch_date, sid, number, date) values (1, '2020-06-09', 1, '4175003665378449', '2020-08-01');
