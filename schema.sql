@@ -45,7 +45,7 @@ create table Buys (
     number                      text,
     primary key (date, package_id, number),
     foreign key (package_id) references Course_packages(package_id),
-    foreign key (number) references Credit_cards(number),
+    foreign key (number) references Credit_cards(number) on update cascade,
     check (num_remaining_redemptions >= 0)    
 );
 
@@ -131,7 +131,7 @@ Constraints not satisfied
 - Total participation constraint of Instructors with respect to Specializes
 */
 create table Specializes (
-    eid            integer references Instructors,
+    eid            integer references Instructors on delete cascade,
     course_area    text references Course_areas,
     primary key(eid, course_area)
 );
@@ -156,21 +156,23 @@ create table Offerings (
     fees                          numeric not null,
     target_number_registrations   integer not null,
     registration_deadline         date not null,
-    start_date                    date,
-    end_date                      date, 
+    start_date                    date not null,
+    end_date                      date not null, 
     eid                           integer not null references Administrators,
-    seating_capacity              integer,
+    seating_capacity              integer not null,
     primary key (course_id, launch_date),
     constraint deadline_before_start check(registration_deadline <  start_date),
     constraint start_before_end check(start_date <=  end_date),
     constraint fees_positive check(fees >= 0),
-    constraint target_number_registrations_positive check(target_number_registrations >= 0)
+    constraint seating_capacity_positive check(seating_capacity >= 0),
+    constraint target_number_registrations_positive check(target_number_registrations >= 0),
+    constraint more_seats_than_target check(seating_capacity >= target_number_registrations)
 );
 
 create table Rooms (
     rid                 integer primary key,
     location            text,
-    seating_capacity    integer
+    seating_capacity    integer not null
 );
 
 /*
@@ -182,9 +184,9 @@ create table Sessions (
     course_id       integer,
     launch_date     date,
     sid             integer,
-    start_time      time,
-    end_time        time,
-    date            date,
+    start_time      time not null,
+    end_time        time not null,
+    date            date not null,
     primary key (course_id, launch_date, sid),
     foreign key (course_id, launch_date) references Offerings (course_id, launch_date)
 );
@@ -203,7 +205,7 @@ create table Cancels (
     cust_id             integer,
     date                date,
     refund_amt          numeric,
-    package_credit      boolean,
+    package_credit      boolean not null,
     primary key (course_id, launch_date, sid, cust_id, date),
     foreign key (cust_id) references Customers (cust_id),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
@@ -216,7 +218,7 @@ create table Registers (
     number          text,
     date            date,
     primary key (course_id, launch_date, sid, number, date),
-    foreign key (number) references Owns (number),
+    foreign key (number) references Owns (number) on update cascade,
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid)
 );
 
@@ -229,7 +231,7 @@ create table Redeems (
     number          text,
     redeems_date    date,
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
-    foreign key (date, package_id, number) references Buys (date, package_id, number),
+    foreign key (date, package_id, number) references Buys (date, package_id, number) on update cascade,
     primary key (course_id, launch_date, sid, date, package_id, number, redeems_date)
 );
 
@@ -243,8 +245,8 @@ create table Conducts (
     course_id       integer,
     launch_date     date,
     sid             integer,
-    rid             integer,
-    eid             integer,
+    rid             integer not null,
+    eid             integer not null,
     primary key (course_id, launch_date, sid),
     foreign key (course_id, launch_date, sid) references Sessions (course_id, launch_date, sid),
     foreign key (rid) references Rooms (rid),
