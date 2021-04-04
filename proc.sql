@@ -237,7 +237,7 @@ BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_after_deadline();
 
 -- Course Offering's seating capacity = sum of all sessions
-CREATE OR REPLACE FUNCTION offering_capacing_sum_sessions()
+CREATE OR REPLACE FUNCTION offering_capacity_sum_sessions()
 RETURNS TRIGGER AS $$
 DECLARE
     total INTEGER;
@@ -253,10 +253,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS offering_capacing_sum_sessions ON Offerings;
-CREATE TRIGGER offering_capacing_sum_sessions
+DROP TRIGGER IF EXISTS offering_capacity_sum_sessions ON Offerings;
+CREATE TRIGGER offering_capacity_sum_sessions
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
-EXECUTE FUNCTION offering_capacing_sum_sessions();
+EXECUTE FUNCTION offering_capacity_sum_sessions();
 
 -- Course Offering's start_date and end_date must correspond to the first and last session
 CREATE OR REPLACE FUNCTION offering_start_end_date()
@@ -872,6 +872,8 @@ BEGIN
         RAISE EXCEPTION 'Title of Course cannot be null';
     ELSIF newArea IS NULL THEN
         RAISE EXCEPTION 'Course area cannot be null';
+    ELSIF newDuration IS NULL THEN
+        RAISE EXCEPTION 'Course duration cannot be null';
     ELSIF course_area_exists = 0 THEN
         RAISE EXCEPTION 'Course area does not exist';
     ELSIF title_exists = 1 THEN
@@ -1288,6 +1290,15 @@ DECLARE
     temp_1 TEXT;
     temp_2 TEXT;
 BEGIN
+    IF cust IS NULL THEN
+        RAISE EXCEPTION 'Customer ID cannot be null';
+    ELSIF cid IS NULL THEN
+        RAISE EXCEPTION 'Course ID cannot be null';
+    ELSIF cdate IS NULL THEN
+        RAISE EXCEPTION 'Course offering launch date cannot be null';
+    ELSIF session IS NULL THEN
+        RAISE EXCEPTION 'Session number cannot be null';
+    END IF;
     SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
     IF temp = 0 THEN
         RAISE EXCEPTION 'Course Offering does not exist';
@@ -1328,6 +1339,13 @@ DECLARE
     remaining INTEGER;
     package INTEGER;
 BEGIN
+    IF cust IS NULL THEN
+        RAISE EXCEPTION 'Customer ID cannot be null';
+    ELSIF cid IS NULL THEN
+        RAISE EXCEPTION 'Course ID cannot be null';
+    ELSIF cdate IS NULL THEN
+        RAISE EXCEPTION 'Course offering launch date cannot be null';
+    END IF;
     SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
     IF temp = 0 THEN
         RAISE EXCEPTION 'Course Offering does not exist';
