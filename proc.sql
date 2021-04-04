@@ -1429,6 +1429,7 @@ DECLARE
     old_rid INTEGER;
     off_seat_cap INTEGER;
     new_cap INTEGER;
+    updated_rid INTEGER;
 BEGIN
     SELECT COUNT(*) FROM Rooms WHERE rid = new_rid into room_count;
     --Room does not exists
@@ -1463,6 +1464,14 @@ BEGIN
                     new_cap := off_seat_cap + (seat_cap - old_room_cap);
                     
                     UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+                    
+                    --if rid is not updated, triggers activated
+                    SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid into updated_rid;
+                    IF updated_rid <> new_rid THEN
+                        RAISE EXCEPTION 'Triggers activated';
+                        RETURN;
+                    END IF;
+                    
                     UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                 END IF;
             END IF;
@@ -1536,6 +1545,8 @@ DECLARE
     max_sid INTEGER;
     new_cap INTEGER;
     check_start_date DATE;
+    sess_trig INTEGER;
+    cond_trig INTEGER;
 BEGIN
     SELECT CURRENT_DATE INTO today;
     SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO deadline;
@@ -1581,7 +1592,22 @@ BEGIN
                         SELECT duration FROM Courses WHERE cid = course_id INTO dur; 
                         
                         INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
+                        
+                        --if not inserted into sessions, it activates some triggers
+                        SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND launch_date = l_date AND sid = new_sid INTO sess_trig;
+                        IF sess_trig = 0 THEN
+                            RAISE EXCEPTION 'Triggers activated';
+                            RETURN;
+                        END IF;
+                        
                         INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
+                        
+                        --if not inserted into conducts, it activates some triggers
+                        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND launch_date = l_date AND sid = new_sid INTO cond_trig;
+                        IF cond_trig = 0 THEN
+                            RAISE EXCEPTION 'Triggers activated';
+                            RETURN;
+                        END IF;
                         
                         --seating capacity
                         SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
@@ -1593,6 +1619,8 @@ BEGIN
                             UPDATE Offerings SET start_date = new_date, seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                             SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO check_start_date;
                             IF check_start_date <> new_date THEN
+                                DELETE FROM Conducts WHERE course_id = cid AND launch_date = l_date AND sid = new_sid;
+                                DELETE FROM Sessions WHERE course_id = cid AND launch_date = l_date AND sid = new_sid;
                                 RAISE EXCEPTION 'Start date should be at least 10 days after registration deadline';
                                 RETURN;
                             END IF;
