@@ -430,6 +430,38 @@ CREATE TRIGGER conducts_one_session
 BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
 EXECUTE FUNCTION conducts_one_session();
 
+--conducting room does not overlap with one another
+CREATE OR REPLACE FUNCTION conduct_room_check()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INT;
+BEGIN
+    WITH inserted_conduct_timing AS (
+        SELECT S.date, S.start_time, S.end_time
+        FROM Sessions S
+        WHERE S.course_id = NEW.course_id AND S.launch_date = NEW.launch_date AND S.sid = NEW.sid
+    )
+    SELECT count(*) INTO count
+    FROM Conducts C, Sessions S, inserted_conduct_timing I
+    WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
+    AND C.rid = NEW.rid
+    AND S.date = I.date
+    AND ((S.start_time >= I.start_time AND I.end_time > S.start_time)
+        OR (I.start_time >= S.start_time AND S.end_time > I.start_time));
+    IF count <> 0 THEN
+        RAISE NOTICE 'Room is used for other conducting session!';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS conduct_room_check ON Conducts;
+CREATE TRIGGER conduct_room_check
+BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
+EXECUTE FUNCTION conduct_room_check();
+
 --check an instructor who is assigned to teach a course session must be specialized in that course area
 CREATE OR REPLACE FUNCTION teacher_specialized()
 RETURNS TRIGGER AS $$
