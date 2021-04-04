@@ -1101,6 +1101,108 @@ end;
 $$ language plpgsql;
 
 --add_course_offering (10)
+create or replace function add_course_offering(courseOfferingId int, courseId int, courseFees int, launchDate date, regisDeadline date, targetNumOfRegis int, adminId int, sessDates date[], sessStartHours time[], roomIds int[]) 
+returns void as $$
+declare
+	lenDates int;
+	lenStartHours int;
+	lenRoomIds int;
+	sessDate date;
+	sessStartHour time;
+	roomId int;
+	courseArea text;
+	instructorIds int[];
+	lenInstructors int;
+	instructorId int;
+	teachingHours int;
+	sessDuration int;
+	r record;
+	hours int[];
+	track int;
+	sessEndInt int;
+	sessEndHour time;
+	sessStartInt int;
+	boolInstructor int;
+	boolSession int;
+begin
+	lenDates := array_length(sessDates, 1);
+	lenStartHours := array_length(sessStartHours, 1);
+	lenRoomIds := array_length(roomIds, 1);
+	if courseOfferingId <> courseId then
+		raise exception 'Course Offering Id and Course Id must be the same since Offerings table references from Course table';
+	elsif courseId = null or courseId not in (select course_id from Courses) then
+		raise exception 'There is no such course id';
+	elsif lenDates <> lenStartHours or lenDates <> lenRoomIds or lenStartHours <> lenRoomIds then
+		raise exception 'Arrays of session information must be of same length';
+	else
+		-- check for valid instructor, if valid update/insert offerings,sessions,conducts
+		select course_area into courseArea from Courses where course_id = courseId;
+		select duration into sessDuration from Courses where course_id = courseId;
+		instructorIds := array(select eid from Specializes where course_area = courseArea);
+		lenInstructors := array_length(instructorIds, 1);
+		if lenInstructors = 0 then
+			raise exception 'No instructor for this course';
+		end if;
+		for i in 1..lenDates loop
+			boolSession := 1; ----- ??
+			sessDate := sessDates[i];
+			sessStartHour := sessStartHours[i];
+			roomId := roomIds[i];
+			for j in 1..lenInstructors loop
+				hours := array[9,10,11,14,15,16,17];
+				instructorId := instructorIds[j];
+				if instructorId in (select eid from Part_time_instructors) then -- part time instructor
+					with table1 as (select course_id, launch_date, sid from Conducts where eid = instructorId)
+            		select extract(hour from sum(end_time - start_time))::integer into teachingHours from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table1) and 
+            		extract(year from current_date)::integer = extract(year from date)::integer and
+            		extract(month from current_date)::integer = extract(month from date)::integer;
+					continue when teachingHours > 30; -- go to next instructor
+				end if;
+				for r in -- table of sessions the instructor is teaching
+				(with table2 as (select course_id, launch_date, sid from Conducts where eid = instructorId)
+				select start_time, end_time from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table2) and date = sessDate) 
+				loop
+					track := f.start_time::int;
+					loop
+					exit when track > f.end_time::int;
+					hours := array_remove(hours, track);
+					track := track + 1;
+					end loop;
+				end loop;
+				sessStartInt := extract(hour from sessStartHour)::integer;
+				sessEndInt := sessStartInt + sessDuration;
+				sessEndHour := sessStartHour + interval '1h' * sessDuration;
+				-- check sessStartInt up till sessEndInt-1 in hours Array, if in assign and continue to next sess, if not in continue to next instructor 
+				boolInstructor := 1;
+				for x in sessStartInt..(sessEndInt-1) loop
+					if x = any(hours) then
+					
+					else
+						boolInstructor := 0;
+						
+					end if;
+				end loop;
+				continue when boolInstructor = 0; -- go to next instructor
+				--insert into Offerings (course_id, launch_date, ) values ();
+-- 				insert into Sessions (course_id, launch_date, sid, start_time, end_time, date) values (courseId, launchDate, ?, sessStartHour, sessEndHour, sessDate);
+-- 				insert into Conducts (course_id, launch_date, sid, rid, eid) values (courseId, launchDate, ?, roomId, instructorId);
+				exit when 1 = 1;
+				
+-- 				if boolFlag = 0 then -- not available
+					
+-- 				else -- boolFlag = 1
+				
+-- 				end if;
+				--continue when -- if instructor is already teaching at that particular time and particular date
+				--continue when -- time is immeidately after the instrcutor session at that particular date
+			end loop; -- next instructor
+			
+		end loop; -- next session
+	
+	
+	end if;
+end;
+$$ language plpgsql;
 
 --add_course_package (11)
 -- if not valid raise exception i.e name = (''/null), numFreeSessions = (negative/null), startDate > endDate, startDate = null, endDate = null, price = (negative/null) 
@@ -1764,7 +1866,9 @@ begin
 			empStatus := 'part-time';
 			numWorkDays := null;
 			with table1 as (select course_id, launch_date, sid from Conducts where eid = r.eid)
-            select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table1);
+            select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table1) and 
+            extract(year from current_date)::integer = extract(year from date)::integer and
+            extract(month from current_date)::integer = extract(month from date)::integer;
 			select hourly_rate into rate from Part_time_Emp where eid = r.eid;
 			if numWorkHours is null then
 				numWorkHours := 0;
