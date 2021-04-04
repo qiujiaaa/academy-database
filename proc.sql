@@ -1744,27 +1744,27 @@ begin
 			else -- first day of work = 1
 				firstWorkDay := 1;
 			end if;
+			SELECT DATE_PART('days', DATE_TRUNC('month', current_date) + '1 MONTH'::INTERVAL - '1 DAY'::INTERVAL)::integer into numDaysInMonth;
 			select depart_date into departDate from Employees where eid = r.eid; 
 			select extract(month from departDate)::integer into departMonth;
 			select extract(year from departDate)::integer into departYear;
 			if departMonth = paymentMonth and departYear = paymentYear then
 				select extract(day from departDate)::integer into lastWorkDay;
 			else
-				select extract(day from current_date)::integer into lastWorkDay; -- number of days in the month
+                lastWorkDay := numDaysInMonth;
 			end if;
 			numWorkDays := lastWorkDay - firstWorkDay + 1;
 			numWorkHours := null;
 			rate := null;
 			select monthly_salary into monthlySalary from Full_time_Emp where eid = r.eid;
-			select extract(day from current_date)::integer into numDaysInMonth;
 			amountPaid := monthlySalary * (numWorkDays / numDaysInMonth);
 			insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (empId, current_date, amountPaid, numWorkHours, numWorkDays);
 			return next;
 		else -- part time instructor, monthly salary and numWorkDays null
 			empStatus := 'part-time';
 			numWorkDays := null;
-			with table1 as (select * from Conducts where eid = r.eid)
-			select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions as S where S.course_id in (select course_id from table1) and S.launch_date in (select launch_date from table1) and S.sid in (select sid from table1); 
+			with table1 as (select course_id, launch_date, sid from Conducts where eid = r.eid)
+            select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table1);
 			select hourly_rate into rate from Part_time_Emp where eid = r.eid;
 			if numWorkHours is null then
 				numWorkHours := 0;
