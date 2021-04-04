@@ -288,18 +288,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.cust_id = old.cust_id;
-	if numOfTuple <= 1 then 
-		--terminate
-		raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
-		return null;
-	else
-		--proceed
-		if (tg_op = 'UPDATE') then
-			return new;
-		elseif (tg_op = 'DELETE') then
-			return old;
-		end if;
-	end if;
+	-- if numOfTuple <= 1 then 
+	-- 	--terminate
+	-- 	raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
+	-- 	return null;
+	-- else
+	-- 	--proceed
+	-- 	if (tg_op = 'UPDATE') then
+	-- 		return new;
+	-- 	elseif (tg_op = 'DELETE') then
+	-- 		return old;
+	-- 	end if;
+	-- end if;
+    if (tg_op = 'DELETE') THEN
+        if numOfTuple <= 1 THEN
+            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+            return null;
+        ELSE
+            return old;
+        end if;
+    elseif (tg_op = 'UPDATE') THEN
+        return new;
+    end if;
 end;
 $$ language plpgsql;
 
@@ -839,18 +849,17 @@ $$ language plpgsql;
 
 --update_credit_card (4)
 --update_credit_card (update Owns as well)
--- TODO: clarify which card to update, for now its the latest date
+-- TODO: clarify which card to update, for now its the latest from_date
 create or replace function update_credit_card(cid int, ccNumber text, ccExpiryDate date, newCVV text)
 returns void as $$
 declare
     ccNumToBeUpdated text;
     latestDate date;
 begin
-    select max(from_date::date) into latestDate from Owns where cust_id = cid;
-    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date::date = latestDate::date;
-    update Credit_cards set expiry_date::date = ccExpiryDate::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
-    --TODO: update Owns as well?
-    update Owns set from_date::date = current_date::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    select max(from_date) into latestDate from Owns where cust_id = cid;
+    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date = latestDate;
+    update Credit_cards set expiry_date = ccExpiryDate, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    update Owns set from_date = current_date where number = ccNumber and cust_id = cid;
 end;
 $$ language plpgsql;
 
