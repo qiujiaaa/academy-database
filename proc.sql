@@ -427,29 +427,6 @@ AFTER INSERT OR UPDATE ON Sessions
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION total_ppt_session_on_conduct();
 
---One session is conducted at most once
-CREATE OR REPLACE FUNCTION conducts_one_session()
-RETURNS TRIGGER AS $$
-DECLARE
-    count INT;
-BEGIN
-    SELECT count(*) INTO count
-    FROM Conducts C
-    WHERE C.course_id = NEW.course_id AND C.launch_date = NEW.launch_date AND C.sid = NEW.sid;
-    IF count <> 0 THEN
-        RAISE NOTICE 'Session can only be conducted once!';
-        RETURN NULL;
-    ELSE
-        RETURN NEW;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS conducts_one_session ON Conducts;
-CREATE TRIGGER conducts_one_session
-BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
-EXECUTE FUNCTION conducts_one_session();
-
 --conducting room does not overlap with one another
 CREATE OR REPLACE FUNCTION conduct_room_check()
 RETURNS TRIGGER AS $$
@@ -851,7 +828,7 @@ DECLARE
     r RECORD;
     
 BEGIN
-    IF eid IS NULL THEN
+    IF id IS NULL THEN
         RAISE EXCEPTION 'Employee id should not be null';
     END IF;
     
