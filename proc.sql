@@ -258,6 +258,22 @@ CREATE TRIGGER offering_capacity_sum_sessions
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_capacity_sum_sessions();
 
+CREATE OR REPLACE FUNCTION offering_more_seats_than_target()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.seating_capacity < NEW.target_number_registrations THEN
+        RAISE NOTICE 'The seating capacity of a new offering must be at least its target number of registrations';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS offering_more_seats_than_target ON Offerings;
+CREATE TRIGGER offering_more_seats_than_target
+BEFORE INSERT ON Offerings FOR EACH ROW
+EXECUTE FUNCTION offering_more_seats_than_target();
+
 -- Course Offering's start_date and end_date must correspond to the first and last session
 CREATE OR REPLACE FUNCTION offering_start_end_date()
 RETURNS TRIGGER AS $$

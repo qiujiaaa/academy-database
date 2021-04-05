@@ -165,8 +165,7 @@ create table Offerings (
     constraint start_before_end check(start_date <=  end_date),
     constraint fees_positive check(fees >= 0),
     constraint seating_capacity_positive check(seating_capacity >= 0),
-    constraint target_number_registrations_positive check(target_number_registrations >= 0),
-    constraint more_seats_than_target check(seating_capacity >= target_number_registrations)
+    constraint target_number_registrations_positive check(target_number_registrations >= 0)
 );
 
 create table Rooms (
