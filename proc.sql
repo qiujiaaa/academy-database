@@ -258,6 +258,22 @@ CREATE TRIGGER offering_capacity_sum_sessions
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_capacity_sum_sessions();
 
+CREATE OR REPLACE FUNCTION offering_more_seats_than_target()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.seating_capacity < NEW.target_number_registrations THEN
+        RAISE NOTICE 'The seating capacity of a new offering must be at least its target number of registrations';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS offering_more_seats_than_target ON Offerings;
+CREATE TRIGGER offering_more_seats_than_target
+BEFORE INSERT ON Offerings FOR EACH ROW
+EXECUTE FUNCTION offering_more_seats_than_target();
+
 -- Course Offering's start_date and end_date must correspond to the first and last session
 CREATE OR REPLACE FUNCTION offering_start_end_date()
 RETURNS TRIGGER AS $$
@@ -288,28 +304,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.cust_id = old.cust_id;
-	-- if numOfTuple <= 1 then 
-	-- 	--terminate
-	-- 	raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
-	-- 	return null;
-	-- else
-	-- 	--proceed
-	-- 	if (tg_op = 'UPDATE') then
-	-- 		return new;
-	-- 	elseif (tg_op = 'DELETE') then
-	-- 		return old;
-	-- 	end if;
-	-- end if;
-    if (tg_op = 'DELETE') THEN
-        if numOfTuple <= 1 THEN
-            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
-            return null;
-        ELSE
-            return old;
-        end if;
-    elseif (tg_op = 'UPDATE') THEN
-        return new;
-    end if;
+	if numOfTuple <= 1 then 
+		--terminate
+		raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; 
+		return null;
+	else
+		--proceed
+		if (tg_op = 'UPDATE') then
+			return new;
+		elseif (tg_op = 'DELETE') then
+			return old;
+		end if;
+	end if;
+    -- if (tg_op = 'DELETE') THEN
+    --     if numOfTuple <= 1 THEN
+    --         raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+    --         return null;
+    --     ELSE
+    --         return old;
+    --     end if;
+    -- elseif (tg_op = 'UPDATE') THEN
+    --     return new;
+    -- end if;
 end;
 $$ language plpgsql;
 
@@ -348,28 +364,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.number = old.number;
-	-- if numOfTuple <= 1 then 
-	-- 	--terminate
-	-- 	raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
-	-- 	return null;
-	-- else
-	-- 	--proceed
-	-- 	if (tg_op = 'UPDATE') then
-	-- 		return new;
-	-- 	elseif (tg_op = 'DELETE') then
-	-- 		return old;
-	-- 	end if;
-	-- end if;
-    if (tg_op = 'DELETE') THEN
-        if numOfTuple <= 1 THEN
-            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
-            return null;
-        ELSE
-            return old;
-        end if;
-    elseif (tg_op = 'UPDATE') THEN
-        return new;
-    end if;
+	if numOfTuple <= 1 then 
+		--terminate
+		raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
+		return null;
+	else
+		--proceed
+		if (tg_op = 'UPDATE') then
+			return new;
+		elseif (tg_op = 'DELETE') then
+			return old;
+		end if;
+	end if;
+    -- if (tg_op = 'DELETE') THEN
+    --     if numOfTuple <= 1 THEN
+    --         raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+    --         return null;
+    --     ELSE
+    --         return old;
+    --     end if;
+    -- elseif (tg_op = 'UPDATE') THEN
+    --     return new;
+    -- end if;
 end;
 $$ language plpgsql;
 
@@ -528,7 +544,7 @@ BEGIN
     AND NEW.launch_date = O.launch_date
     AND NEW.date > O.registration_deadline;
     IF count > 0 THEN
-        RAISE NOTICE 'Register of session must be before the registration deadline of Offering';
+        RAISE NOTICE 'Registration of session must be before the registration deadline of Offering';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -646,8 +662,8 @@ BEGIN
             DELETE FROM Registers WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_1;
         ELSE 
             DELETE FROM Redeems WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_2;
-        RETURN NEW;
         END IF;
+        RETURN NEW;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -667,7 +683,7 @@ BEGIN
     SELECT duration INTO course_duration
     FROM Courses C
     WHERE NEW.course_id = C.course_id;
-    course_minutes := course_duration * INTERVAL '1 minute';
+    course_minutes := course_duration * 60 * INTERVAL '1 minute';
     IF (NEW.end_time <> (NEW.start_time + course_minutes)) THEN
         NEW.end_time := NEW.start_time + course_minutes;
     END IF;
@@ -915,17 +931,19 @@ $$ language plpgsql;
 
 --update_credit_card (4)
 --update_credit_card (update Owns as well)
--- TODO: clarify which card to update, for now its the latest from_date
+-- Prof said can just add new credit_card
 create or replace function update_credit_card(cid int, ccNumber text, ccExpiryDate date, newCVV text)
 returns void as $$
 declare
-    ccNumToBeUpdated text;
-    latestDate date;
+    -- ccNumToBeUpdated text;
+    -- latestDate date;
 begin
-    select max(from_date) into latestDate from Owns where cust_id = cid;
-    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date = latestDate;
-    update Credit_cards set expiry_date = ccExpiryDate, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
-    update Owns set from_date = current_date where number = ccNumber and cust_id = cid;
+    insert into Credit_cards (expiry_date, number, CVV) values (ccExpiryDate, ccNumber, newCVV);
+    insert into Owns (from_date, number, cust_id) values (current_date, ccNumber, cid);
+    -- select max(from_date) into latestDate from Owns where cust_id = cid;
+    -- select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date = latestDate;
+    -- update Credit_cards set expiry_date = ccExpiryDate, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    -- update Owns set from_date = current_date where number = ccNumber and cust_id = cid;
 end;
 $$ language plpgsql;
 
@@ -1032,13 +1050,13 @@ BEGIN
                 EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
                 SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
                 WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
-                IF temp = 0 THEN -- this timing has no clashes
+                IF temp = 0 AND NOT((c_time, c_time + interval '1 hour' * lesson_duration) OVERLAPS (time '12:00', time '14:00')) THEN 
+                    -- this timing has no clashes & does not overlap with lunch time
                     hour_array := array_append(hour_array, c_time);
                 END IF;
                 c_time := c_time + interval '1 hour';
             END LOOP;
             IF array_length(hour_array, 1) > 0 THEN -- there are possible timings on this date 
-            
                 employee_id := r.eid;
                 name := (SELECT Employees.name FROM Employees WHERE eid = r.eid);
                 working_hours := hours_this_month;
@@ -1203,7 +1221,13 @@ begin
 	lenStartHours := array_length(sessStartHours, 1);
 	lenRoomIds := array_length(roomIds, 1);
     offeringCapacity := 0;
+    if adminId not in (select eid from Administrators) then
+        raise exception 'Admin Id does not exist';
+    end if;
     for n in 1..lenRoomIds loop
+        if roomIds[n] not in (select rid from Rooms) then
+            raise exception 'Room id does not exist';
+        end if; 
         select seating_capacity into countCapacity from Rooms where rid = roomIds[n];
         offeringCapacity := offeringCapacity + countCapacity;
     end loop;
