@@ -551,7 +551,7 @@ BEGIN
     AND NEW.launch_date = O.launch_date
     AND NEW.date > O.registration_deadline;
     IF count > 0 THEN
-        RAISE NOTICE 'Register of session must be before the registration deadline of Offering';
+        RAISE NOTICE 'Registration of session must be before the registration deadline of Offering';
         RETURN NULL;
     ELSE
         RETURN NEW;
@@ -669,8 +669,8 @@ BEGIN
             DELETE FROM Registers WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_1;
         ELSE 
             DELETE FROM Redeems WHERE course_id = NEW.course_id AND launch_date = NEW.launch_date and number = temp_2;
-        RETURN NEW;
         END IF;
+        RETURN NEW;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
