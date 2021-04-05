@@ -258,6 +258,22 @@ CREATE TRIGGER offering_capacity_sum_sessions
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_capacity_sum_sessions();
 
+CREATE OR REPLACE FUNCTION offering_more_seats_than_target()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.seating_capacity < NEW.target_number_registrations THEN
+        RAISE NOTICE 'The seating capacity of a new offering must be at least its target number of registrations';
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS offering_more_seats_than_target ON Offerings;
+CREATE TRIGGER offering_more_seats_than_target
+BEFORE INSERT ON Offerings FOR EACH ROW
+EXECUTE FUNCTION offering_more_seats_than_target();
+
 -- Course Offering's start_date and end_date must correspond to the first and last session
 CREATE OR REPLACE FUNCTION offering_start_end_date()
 RETURNS TRIGGER AS $$
@@ -1057,13 +1073,13 @@ BEGIN
                 EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
                 SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
                 WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
-                IF temp = 0 THEN -- this timing has no clashes
+                IF temp = 0 AND NOT((c_time, c_time + interval '1 hour' * lesson_duration) OVERLAPS (time '12:00', time '14:00')) THEN 
+                    -- this timing has no clashes & does not overlap with lunch time
                     hour_array := array_append(hour_array, c_time);
                 END IF;
                 c_time := c_time + interval '1 hour';
             END LOOP;
             IF array_length(hour_array, 1) > 0 THEN -- there are possible timings on this date 
-            
                 employee_id := r.eid;
                 name := (SELECT Employees.name FROM Employees WHERE eid = r.eid);
                 working_hours := hours_this_month;
