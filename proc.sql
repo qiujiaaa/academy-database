@@ -288,28 +288,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.cust_id = old.cust_id;
-	-- if numOfTuple <= 1 then 
-	-- 	--terminate
-	-- 	raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
-	-- 	return null;
-	-- else
-	-- 	--proceed
-	-- 	if (tg_op = 'UPDATE') then
-	-- 		return new;
-	-- 	elseif (tg_op = 'DELETE') then
-	-- 		return old;
-	-- 	end if;
-	-- end if;
-    if (tg_op = 'DELETE') THEN
-        if numOfTuple <= 1 THEN
-            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
-            return null;
-        ELSE
-            return old;
-        end if;
-    elseif (tg_op = 'UPDATE') THEN
-        return new;
-    end if;
+	if numOfTuple <= 1 then 
+		--terminate
+		raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; 
+		return null;
+	else
+		--proceed
+		if (tg_op = 'UPDATE') then
+			return new;
+		elseif (tg_op = 'DELETE') then
+			return old;
+		end if;
+	end if;
+    -- if (tg_op = 'DELETE') THEN
+    --     if numOfTuple <= 1 THEN
+    --         raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+    --         return null;
+    --     ELSE
+    --         return old;
+    --     end if;
+    -- elseif (tg_op = 'UPDATE') THEN
+    --     return new;
+    -- end if;
 end;
 $$ language plpgsql;
 
@@ -348,28 +348,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.number = old.number;
-	-- if numOfTuple <= 1 then 
-	-- 	--terminate
-	-- 	raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
-	-- 	return null;
-	-- else
-	-- 	--proceed
-	-- 	if (tg_op = 'UPDATE') then
-	-- 		return new;
-	-- 	elseif (tg_op = 'DELETE') then
-	-- 		return old;
-	-- 	end if;
-	-- end if;
-    if (tg_op = 'DELETE') THEN
-        if numOfTuple <= 1 THEN
-            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
-            return null;
-        ELSE
-            return old;
-        end if;
-    elseif (tg_op = 'UPDATE') THEN
-        return new;
-    end if;
+	if numOfTuple <= 1 then 
+		--terminate
+		raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
+		return null;
+	else
+		--proceed
+		if (tg_op = 'UPDATE') then
+			return new;
+		elseif (tg_op = 'DELETE') then
+			return old;
+		end if;
+	end if;
+    -- if (tg_op = 'DELETE') THEN
+    --     if numOfTuple <= 1 THEN
+    --         raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+    --         return null;
+    --     ELSE
+    --         return old;
+    --     end if;
+    -- elseif (tg_op = 'UPDATE') THEN
+    --     return new;
+    -- end if;
 end;
 $$ language plpgsql;
 
@@ -938,17 +938,19 @@ $$ language plpgsql;
 
 --update_credit_card (4)
 --update_credit_card (update Owns as well)
--- TODO: clarify which card to update, for now its the latest from_date
+-- Prof said can just add new credit_card
 create or replace function update_credit_card(cid int, ccNumber text, ccExpiryDate date, newCVV text)
 returns void as $$
 declare
-    ccNumToBeUpdated text;
-    latestDate date;
+    -- ccNumToBeUpdated text;
+    -- latestDate date;
 begin
-    select max(from_date) into latestDate from Owns where cust_id = cid;
-    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date = latestDate;
-    update Credit_cards set expiry_date = ccExpiryDate, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
-    update Owns set from_date = current_date where number = ccNumber and cust_id = cid;
+    insert into Credit_cards (expiry_date, number, CVV) values (ccExpiryDate, ccNumber, newCVV);
+    insert into Owns (from_date, number, cust_id) values (current_date, ccNumber, cid);
+    -- select max(from_date) into latestDate from Owns where cust_id = cid;
+    -- select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date = latestDate;
+    -- update Credit_cards set expiry_date = ccExpiryDate, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    -- update Owns set from_date = current_date where number = ccNumber and cust_id = cid;
 end;
 $$ language plpgsql;
 
@@ -1226,7 +1228,13 @@ begin
 	lenStartHours := array_length(sessStartHours, 1);
 	lenRoomIds := array_length(roomIds, 1);
     offeringCapacity := 0;
+    if adminId not in (select eid from Administrators) then
+        raise exception 'Admin Id does not exist';
+    end if;
     for n in 1..lenRoomIds loop
+        if roomIds[n] not in (select rid from Rooms) then
+            raise exception 'Room id does not exist';
+        end if; 
         select seating_capacity into countCapacity from Rooms where rid = roomIds[n];
         offeringCapacity := offeringCapacity + countCapacity;
     end loop;
