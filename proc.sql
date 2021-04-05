@@ -448,6 +448,7 @@ CREATE OR REPLACE FUNCTION conduct_room_check()
 RETURNS TRIGGER AS $$
 DECLARE
     count INT;
+    same_row_count INT;
 BEGIN
     WITH inserted_conduct_timing AS (
         SELECT S.date, S.start_time, S.end_time
@@ -461,7 +462,15 @@ BEGIN
     AND S.date = I.date
     AND ((S.start_time >= I.start_time AND I.end_time > S.start_time)
         OR (I.start_time >= S.start_time AND S.end_time > I.start_time));
-    IF count <> 0 THEN
+    
+    SELECT count(*) INTO same_row_count
+    FROM Conducts C
+    WHERE C.course_id = NEW.course_id
+    AND C.launch_date = NEW.launch_date
+    AND C.sid = NEW.sid
+    AND C.rid = NEW.rid;
+
+    IF count <> 0 AND same_row_count = 0 THEN
         RAISE NOTICE 'Room is used for other conducting session!';
         RETURN NULL;
     ELSE
@@ -1833,6 +1842,7 @@ DECLARE
     today DATE;
     sess_date DATE;
     regist_count INTEGER;
+    canc_count INTEGER;
     room_id INTEGER;
     room_seat_cap INTEGER;
     seat_cap INTEGER;
@@ -1862,8 +1872,11 @@ BEGIN
             RAISE EXCEPTION 'Session has already launched, cannot remove session';
         ELSE
             SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sid = sess_id into regist_count;
+            SELECT COUNT(*) FROM Cancels WHERE course_id = cid AND l_date = launch_date AND sid = sess_id into canc_count;
             IF regist_count > 0 THEN
                 RAISE EXCEPTION 'There is at least one registration for the session';
+            ELSIF canc_count > 0 THEN
+                RAISE EXCEPTION 'There is at least one cancellation for the session';
             ELSE
                 SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO room_id;
                 SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
