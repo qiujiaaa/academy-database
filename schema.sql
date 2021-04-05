@@ -196,7 +196,7 @@ Constraints not satisfied:
 - For a credit card payment, the company’s cancellation policy will refund 90% of the paid fees for a registered course if the cancellation
 is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
 For a redeemed course session, the company’s cancellation policy will credit an extra course session to the customer’s course package
-if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation.
+if the cancellation is made at least 7 days before the day of the registered session; otherwise, there will no refund for a late cancellation. (done)
 */
 create table Cancels (
     course_id           integer,
@@ -237,8 +237,8 @@ create table Redeems (
 
 /*
 Constraints not satisfied:
-- total participation constraint of Sessions with respect to Conducts not enforced.
-- cannot check room is conducted at most one course Session at any time.
+- total participation constraint of Sessions with respect to Conducts not enforced. (done)
+- cannot check room is conducted at most one course Session at any time. (done)
 - cannot check no two sessions for the same course offering can be conducted on the same day and at the same time. (done)
 */
 create table Conducts (
