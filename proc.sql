@@ -1072,7 +1072,8 @@ BEGIN
             LOOP -- loop through all hour intervals of the date to find available time slots
                 EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
                 SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
-                WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
+                WHERE eid = r.eid AND date = c_date AND 
+                ((c_time - interval '1 hour', c_time + interval '1 hour' * (lesson_duration+1)) OVERLAPS (start_time, end_time));
                 IF temp = 0 AND NOT((c_time, c_time + interval '1 hour' * lesson_duration) OVERLAPS (time '12:00', time '14:00')) THEN 
                     -- this timing has no clashes & does not overlap with lunch time
                     hour_array := array_append(hour_array, c_time);
