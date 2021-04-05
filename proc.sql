@@ -1145,8 +1145,8 @@ begin
 					roomCapacity := r.seating_capacity;
 					day := startDate;
 					for f in 
-					(with tempTable as (select * from Conducts as C1 where C1.rid = roomId)
-					select start_time, end_time from Sessions where course_id in (select course_id from tempTable) and launch_date in (select launch_date from tempTable) and sid in (select * from tempTable) and date = startDate order by start_time) 
+					(with tempTable as (select C1.course_id, C1.launch_date, C1.sid from Conducts as C1 where C1.rid = roomId)
+					select start_time, end_time from Sessions where (course_id, launch_date, sid) in (select * from tempTable) and date = startDate order by start_time) 
 					loop
 						track := f.start_time;
 						loop
