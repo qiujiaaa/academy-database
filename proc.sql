@@ -2027,6 +2027,9 @@ BEGIN
                         IF offering_end < new_date THEN
                             UPDATE Offerings SET end_date = new_date, seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                         END IF;
+                        
+                        --update seat_cap
+                        UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                     END IF;
                 END IF;
             END IF;
