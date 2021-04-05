@@ -706,7 +706,7 @@ BEGIN
     SELECT duration INTO course_duration
     FROM Courses C
     WHERE NEW.course_id = C.course_id;
-    course_minutes := course_duration * INTERVAL '1 minute';
+    course_minutes := course_duration * 60 * INTERVAL '1 minute';
     IF (NEW.end_time <> (NEW.start_time + course_minutes)) THEN
         NEW.end_time := NEW.start_time + course_minutes;
     END IF;
