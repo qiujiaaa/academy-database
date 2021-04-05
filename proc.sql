@@ -947,6 +947,11 @@ declare
     -- ccNumToBeUpdated text;
     -- latestDate date;
 begin
+    IF cid IS NULL THEN 
+        RAISE EXCEPTION 'Customer id cannot be null';
+    ELSIF ccNumber IS NULL OR ccExpiryDate IS NULL OR newCVV IS NULL THEN 
+        RAISE EXCEPTION 'Credit card details cannot be null';
+    END IF;
     insert into Credit_cards (expiry_date, number, CVV) values (ccExpiryDate, ccNumber, newCVV);
     insert into Owns (from_date, number, cust_id) values (current_date, ccNumber, cid);
     -- select max(from_date) into latestDate from Owns where cust_id = cid;
@@ -1058,7 +1063,8 @@ BEGIN
             LOOP -- loop through all hour intervals of the date to find available time slots
                 EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
                 SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
-                WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
+                WHERE eid = r.eid AND date = c_date AND 
+                ((c_time - interval '1 hour', c_time + interval '1 hour' * (lesson_duration+1)) OVERLAPS (start_time, end_time));
                 IF temp = 0 AND NOT((c_time, c_time + interval '1 hour' * lesson_duration) OVERLAPS (time '12:00', time '14:00')) THEN 
                     -- this timing has no clashes & does not overlap with lunch time
                     hour_array := array_append(hour_array, c_time);
@@ -1598,7 +1604,7 @@ BEGIN
         RAISE EXCEPTION 'Course ID cannot be null';
     ELSIF cdate IS NULL THEN
         RAISE EXCEPTION 'Course offering launch date cannot be null';
-    ELSIF session IS NULL THEN
+    ELSIF new_session IS NULL THEN
         RAISE EXCEPTION 'Session number cannot be null';
     END IF;
     SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
