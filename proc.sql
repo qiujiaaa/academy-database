@@ -237,7 +237,7 @@ BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
 EXECUTE FUNCTION offering_start_after_deadline();
 
 -- Course Offering's seating capacity = sum of all sessions
-CREATE OR REPLACE FUNCTION offering_capacing_sum_sessions()
+CREATE OR REPLACE FUNCTION offering_capacity_sum_sessions()
 RETURNS TRIGGER AS $$
 DECLARE
     total INTEGER;
@@ -253,10 +253,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS offering_capacing_sum_sessions ON Offerings;
-CREATE TRIGGER offering_capacing_sum_sessions
+DROP TRIGGER IF EXISTS offering_capacity_sum_sessions ON Offerings;
+CREATE TRIGGER offering_capacity_sum_sessions
 BEFORE INSERT OR UPDATE ON Offerings FOR EACH ROW
-EXECUTE FUNCTION offering_capacing_sum_sessions();
+EXECUTE FUNCTION offering_capacity_sum_sessions();
 
 -- Course Offering's start_date and end_date must correspond to the first and last session
 CREATE OR REPLACE FUNCTION offering_start_end_date()
@@ -401,8 +401,87 @@ after insert or update on Credit_cards
 deferrable initially deferred
 for each row execute function owns_cc_func2();
 
-/* ------------------------------- functionalities -------------------------------*/
+
 -- start of jonathan functionality.
+
+-- check total particpation for Sessions and Conducts
+CREATE OR REPLACE FUNCTION total_ppt_session_on_conduct()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INT;
+BEGIN
+    SELECT count(*) INTO count
+    FROM Conducts C
+    WHERE C.course_id = NEW.course_id AND C.launch_date = NEW.launch_date AND C.sid = NEW.sid;
+    IF count <> 1 THEN
+        RAISE EXCEPTION 'Total particpation constraint of Sessions and Conducts not met!';
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS total_ppt_session_on_conduct ON Sessions;
+CREATE CONSTRAINT TRIGGER total_ppt_session_on_conduct
+AFTER INSERT OR UPDATE ON Sessions
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION total_ppt_session_on_conduct();
+
+--One session is conducted at most once
+CREATE OR REPLACE FUNCTION conducts_one_session()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INT;
+BEGIN
+    SELECT count(*) INTO count
+    FROM Conducts C
+    WHERE C.course_id = NEW.course_id AND C.launch_date = NEW.launch_date AND C.sid = NEW.sid;
+    IF count <> 0 THEN
+        RAISE NOTICE 'Session can only be conducted once!';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS conducts_one_session ON Conducts;
+CREATE TRIGGER conducts_one_session
+BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
+EXECUTE FUNCTION conducts_one_session();
+
+--conducting room does not overlap with one another
+CREATE OR REPLACE FUNCTION conduct_room_check()
+RETURNS TRIGGER AS $$
+DECLARE
+    count INT;
+BEGIN
+    WITH inserted_conduct_timing AS (
+        SELECT S.date, S.start_time, S.end_time
+        FROM Sessions S
+        WHERE S.course_id = NEW.course_id AND S.launch_date = NEW.launch_date AND S.sid = NEW.sid
+    )
+    SELECT count(*) INTO count
+    FROM Conducts C, Sessions S, inserted_conduct_timing I
+    WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
+    AND C.rid = NEW.rid
+    AND S.date = I.date
+    AND ((S.start_time >= I.start_time AND I.end_time > S.start_time)
+        OR (I.start_time >= S.start_time AND S.end_time > I.start_time));
+    IF count <> 0 THEN
+        RAISE NOTICE 'Room is used for other conducting session!';
+        RETURN NULL;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS conduct_room_check ON Conducts;
+CREATE TRIGGER conduct_room_check
+BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
+EXECUTE FUNCTION conduct_room_check();
+
 --check an instructor who is assigned to teach a course session must be specialized in that course area
 CREATE OR REPLACE FUNCTION teacher_specialized()
 RETURNS TRIGGER AS $$
@@ -682,12 +761,16 @@ EXECUTE FUNCTION update_refund_policy();
 /* ---------------------- functionalities ----------------------*/
 --add_employee (1)
 CREATE OR REPLACE FUNCTION 
-add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, emp_cat TEXT, salary INTEGER, join_date DATE,  course_area TEXT[])
+add_employee(name TEXT, address TEXT, phone TEXT, email TEXT, full_part TEXT, emp_cat TEXT, salary INTEGER, join_date DATE, course_area TEXT[])
 RETURNS VOID AS $$
 DECLARE 
     eid INTEGER;
     c_area TEXT;
 BEGIN
+    IF salary IS NULL THEN
+        RAISE EXCEPTION 'Salary should not be null';
+    END IF;
+
     SELECT COUNT(*) FROM Employees INTO eid;
     eid := eid + 1;
     --Administrator
@@ -768,6 +851,14 @@ DECLARE
     r RECORD;
     
 BEGIN
+    IF eid IS NULL THEN
+        RAISE EXCEPTION 'Employee id should not be null';
+    END IF;
+    
+    IF d_date IS NULL THEN
+        RAISE EXCEPTION 'Depart date should not be null';
+    END IF;
+
     SELECT COUNT(*) FROM Administrators WHERE Administrators.eid = id INTO admin_count;
     SELECT COUNT(*) FROM Instructors WHERE Instructors.eid = id INTO instr_count;
     SELECT COUNT(*) FROM Managers WHERE Managers.eid = id INTO mngr_count;
@@ -782,7 +873,6 @@ BEGIN
                 EXIT WHEN NOT FOUND;
                 IF r.registration_deadline > d_date THEN
                     RAISE EXCEPTION 'Administrator is still handling some course offering';
-                    RETURN;
                 END IF;
                 
                 UPDATE Employees SET depart_date = d_date WHERE Employees.eid = id;
@@ -802,7 +892,6 @@ BEGIN
                 EXIT WHEN NOT FOUND;
                 IF r.launch_date > d_date THEN
                     RAISE EXCEPTION 'Instructor is teaching some course that starts after depart date';
-                    RETURN;
                 END IF;
             END LOOP;
             CLOSE cnd_curs;
@@ -881,6 +970,8 @@ BEGIN
         RAISE EXCEPTION 'Title of Course cannot be null';
     ELSIF newArea IS NULL THEN
         RAISE EXCEPTION 'Course area cannot be null';
+    ELSIF newDuration IS NULL THEN
+        RAISE EXCEPTION 'Course duration cannot be null';
     ELSIF course_area_exists = 0 THEN
         RAISE EXCEPTION 'Course area does not exist';
     ELSIF title_exists = 1 THEN
@@ -1478,6 +1569,15 @@ DECLARE
     temp_1 TEXT;
     temp_2 TEXT;
 BEGIN
+    IF cust IS NULL THEN
+        RAISE EXCEPTION 'Customer ID cannot be null';
+    ELSIF cid IS NULL THEN
+        RAISE EXCEPTION 'Course ID cannot be null';
+    ELSIF cdate IS NULL THEN
+        RAISE EXCEPTION 'Course offering launch date cannot be null';
+    ELSIF session IS NULL THEN
+        RAISE EXCEPTION 'Session number cannot be null';
+    END IF;
     SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
     IF temp = 0 THEN
         RAISE EXCEPTION 'Course Offering does not exist';
@@ -1518,6 +1618,13 @@ DECLARE
     remaining INTEGER;
     package INTEGER;
 BEGIN
+    IF cust IS NULL THEN
+        RAISE EXCEPTION 'Customer ID cannot be null';
+    ELSIF cid IS NULL THEN
+        RAISE EXCEPTION 'Course ID cannot be null';
+    ELSIF cdate IS NULL THEN
+        RAISE EXCEPTION 'Course offering launch date cannot be null';
+    END IF;
     SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
     IF temp = 0 THEN
         RAISE EXCEPTION 'Course Offering does not exist';
@@ -1580,31 +1687,43 @@ DECLARE
     area TEXT;
     area_count INTEGER;
 BEGIN
+    IF cid IS NULL THEN
+        RAISE EXCEPTION 'Course identifier should not be null';
+    END IF;
+    
+    IF l_date IS NULL THEN
+        RAISE EXCEPTION 'Launch date should not be null';
+    END IF;
+    
+    IF sess_id IS NULL THEN
+        RAISE EXCEPTION 'Session id should not be null';
+    END IF;
+    
+    IF new_eid IS NULL THEN
+        RAISE EXCEPTION 'New instructor id should not be null';
+    END IF;
+    
     SELECT COUNT(*) FROM Instructors WHERE eid = new_eid INTO instr_count;
     --instructor does not exists
     IF instr_count = 0 THEN
         RAISE EXCEPTION 'Instructor does not exists';
-        RETURN;
     ELSE
         SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO conducts_count;
         --Session does not exists
         IF conducts_count = 0 THEN
             RAISE EXCEPTION 'This session does not exists';
-            RETURN;
         ELSE
             SELECT CURRENT_DATE INTO today;
             SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
             --session alr launched
             IF sess_date < today THEN
                 RAISE EXCEPTION 'Session has already launched, cannot change instructor';
-                RETURN;
             ELSE
                 --instructor not specialize in that area
                 SELECT course_area FROM Courses WHERE cid = course_id into area;
                 SELECT COUNT(*) FROM Specializes WHERE new_eid = eid AND area = course_area INTO area_count;
                 IF area_count = 0 THEN
                     RAISE EXCEPTION 'New instructor is not specializes in this course area';
-                    RETURN;
                 ELSE
                     UPDATE Conducts SET eid = new_eid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 END IF;
@@ -1629,32 +1748,45 @@ DECLARE
     old_rid INTEGER;
     off_seat_cap INTEGER;
     new_cap INTEGER;
+    updated_rid INTEGER;
 BEGIN
+    IF cid IS NULL THEN
+        RAISE EXCEPTION 'Course identifier should not be null';
+    END IF;
+    
+    IF l_date IS NULL THEN
+        RAISE EXCEPTION 'Launch date should not be null';
+    END IF;
+    
+    IF sess_id IS NULL THEN
+        RAISE EXCEPTION 'Session id should not be null';
+    END IF;
+    
+    IF new_rid IS NULL THEN
+        RAISE EXCEPTION 'New room id should not be null';
+    END IF;
+    
     SELECT COUNT(*) FROM Rooms WHERE rid = new_rid into room_count;
     --Room does not exists
     IF room_count = 0 THEN
         RAISE EXCEPTION 'Room does not exists';
-        RETURN;
     ELSE
         SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO conducts_count;
         --Session does not exists
         IF conducts_count = 0 THEN
             RAISE EXCEPTION 'This session does not exists';
-            RETURN;
         ELSE
             SELECT CURRENT_DATE INTO today;
             SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
             --Session alr launched
             IF sess_date < today THEN
                 RAISE EXCEPTION 'Session has already launched, cannot change room';
-                RETURN;
             ELSE
                 SELECT seating_capacity FROM Rooms WHERE rid = new_rid INTO seat_cap;
                 SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO no_of_reg;
                 --No of Reg > Seat Cap
                 IF no_of_reg > seat_cap THEN
                     RAISE EXCEPTION 'Number of registration for this session exceeds the seating capacity of new room';
-                    RETURN;
                 ELSE
                     SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO old_rid;
                     SELECT seating_capacity FROM Rooms WHERE rid = old_rid INTO old_room_cap;
@@ -1663,6 +1795,13 @@ BEGIN
                     new_cap := off_seat_cap + (seat_cap - old_room_cap);
                     
                     UPDATE Conducts SET rid = new_rid WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
+                    
+                    --if rid is not updated, triggers activated
+                    SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid into updated_rid;
+                    IF updated_rid <> new_rid THEN
+                        RAISE EXCEPTION 'Triggers activated';
+                    END IF;
+                    
                     UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                 END IF;
             END IF;
@@ -1685,21 +1824,30 @@ DECLARE
     seat_cap INTEGER;
     new_cap INTEGER;
 BEGIN
+    IF cid IS NULL THEN
+        RAISE EXCEPTION 'Course identifier should not be null';
+    END IF;
+    
+    IF l_date IS NULL THEN
+        RAISE EXCEPTION 'Launch date should not be null';
+    END IF;
+    
+    IF sess_id IS NULL THEN
+        RAISE EXCEPTION 'Session id should not be null';
+    END IF;
+
     SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_count;
     IF sess_count = 0 THEN
         RAISE EXCEPTION 'Session does not exists';
-        RETURN;
     ELSE
         SELECT CURRENT_DATE INTO today;
         SELECT date FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO sess_date;
         IF sess_date < today THEN
             RAISE EXCEPTION 'Session has already launched, cannot remove session';
-            RETURN;
         ELSE
             SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sid = sess_id into regist_count;
             IF regist_count > 0 THEN
                 RAISE EXCEPTION 'There is at least one registration for the session';
-                RETURN;
             ELSE
                 SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO room_id;
                 SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
@@ -1736,12 +1884,41 @@ DECLARE
     max_sid INTEGER;
     new_cap INTEGER;
     check_start_date DATE;
+    sess_trig INTEGER;
+    cond_trig INTEGER;
 BEGIN
+    IF cid IS NULL THEN
+        RAISE EXCEPTION 'Course identifier should not be null';
+    END IF;
+    
+    IF l_date IS NULL THEN
+        RAISE EXCEPTION 'Launch date should not be null';
+    END IF;
+    
+    IF new_sid IS NULL THEN
+        RAISE EXCEPTION 'New session id should not be null';
+    END IF;
+    
+    IF new_date IS NULL THEN
+        RAISE EXCEPTION 'Date of session should not be null';
+    END IF;
+    
+    IF new_start IS NULL THEN
+        RAISE EXCEPTION 'Start time should not be null';
+    END IF;
+    
+    IF instr_id IS NULL THEN
+        RAISE EXCEPTION 'Instructor id should not be null';
+    END IF;
+    
+    IF room_id IS NULL THEN
+        RAISE EXCEPTION 'Room id should not be null';
+    END IF;
+    
     SELECT CURRENT_DATE INTO today;
     SELECT registration_deadline FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO deadline;
     IF deadline < today THEN
         RAISE EXCEPTION 'Course offerings registration deadline passed';
-        RETURN;
     ELSE
         SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sid = new_sid INTO sess_count;
         SELECT MAX(sid) FROM Sessions WHERE course_id = cid AND l_date = launch_date INTO max_sid;
@@ -1753,12 +1930,10 @@ BEGIN
         --sid already exists
         IF sess_count <> 0 THEN
             RAISE EXCEPTION 'Session number already exists';
-            RETURN;
         ELSE
             --sid must be in increasing order
             IF new_sid <> (max_sid+1) THEN
                 RAISE EXCEPTION 'New session number is not in increasing order, new sid should be %', max_sid+1;
-                RETURN;
             ELSE 
                 SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_start;
                 SELECT end_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO offering_end;
@@ -1767,7 +1942,6 @@ BEGIN
                 --Session date is earlier than offering's registration deadline
                 IF new_date < offering_reg THEN
                     RAISE EXCEPTION 'Session date is earlier than registration deadline';
-                    RETURN;
                 ELSE 
                     --check that intructor is specialize in that area
                     SELECT course_area FROM Courses WHERE course_id = cid INTO area;
@@ -1775,13 +1949,26 @@ BEGIN
                     
                     IF area_count = 0 THEN
                         RAISE EXCEPTION 'Instructor is not specialize in this course_area';
-                        RETURN;
                     ELSE 
                         --get duration from Courses table
                         SELECT duration FROM Courses WHERE cid = course_id INTO dur; 
                         
                         INSERT INTO Sessions(course_id, launch_date, sid, start_time, end_time, date) VALUES (cid, l_date, new_sid, new_start, new_start + (dur * interval '1 hour'), new_date);
+                        
+                        --if not inserted into sessions, it activates some triggers
+                        SELECT COUNT(*) FROM Sessions WHERE course_id = cid AND launch_date = l_date AND sid = new_sid INTO sess_trig;
+                        IF sess_trig = 0 THEN
+                            RAISE EXCEPTION 'Triggers activated';
+                        END IF;
+                        
                         INSERT INTO Conducts(course_id, launch_date, sid, rid, eid) VALUES (cid, l_date, new_sid, room_id, instr_id);
+                        
+                        --if not inserted into conducts, it activates some triggers
+                        SELECT COUNT(*) FROM Conducts WHERE course_id = cid AND launch_date = l_date AND sid = new_sid INTO cond_trig;
+                        IF cond_trig = 0 THEN
+                            DELETE FROM Sessions WHERE course_id = cid AND launch_date = l_date AND sid = new_sid;
+                            RAISE EXCEPTION 'Triggers activated';
+                        END IF;
                         
                         --seating capacity
                         SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
@@ -1793,8 +1980,9 @@ BEGIN
                             UPDATE Offerings SET start_date = new_date, seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                             SELECT start_date FROM Offerings WHERE course_id = cid AND l_date = launch_date INTO check_start_date;
                             IF check_start_date <> new_date THEN
+                                DELETE FROM Conducts WHERE course_id = cid AND launch_date = l_date AND sid = new_sid;
+                                DELETE FROM Sessions WHERE course_id = cid AND launch_date = l_date AND sid = new_sid;
                                 RAISE EXCEPTION 'Start date should be at least 10 days after registration deadline';
-                                RETURN;
                             END IF;
                         END IF;
                         
@@ -2046,9 +2234,12 @@ $$ LANGUAGE sql;
 CREATE OR REPLACE FUNCTION view_summary_report(n INTEGER)
 RETURNS TABLE(mth INTEGER, yr INTEGER, salary_paid INTEGER, sales_of_cpkg INTEGER, reg_fee_cc INTEGER, refund_fees INTEGER, creg_cpkg INTEGER) AS $$
 BEGIN
+    IF n IS NULL THEN
+        RAISE EXCEPTION 'n should not be null';
+    END IF;
+    
     IF n <= 0 THEN
         RAISE EXCEPTION 'Please input a number greater than 0';
-        RETURN;
     END IF;
 
     FOR i IN 0..(n-1) LOOP
