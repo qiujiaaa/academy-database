@@ -1146,7 +1146,7 @@ begin
 					day := startDate;
 					for f in 
 					(with tempTable as (select * from Conducts as C1 where C1.rid = roomId)
-					select start_time, end_time from Sessions where course_id in (select course_id from tempTable) and launch_date in (select launch_date from tempTable) and sid in (select sid from tempTable) and date = startDate order by start_time) 
+					select start_time, end_time from Sessions where course_id in (select course_id from tempTable) and launch_date in (select launch_date from tempTable) and sid in (select * from tempTable) and date = startDate order by start_time) 
 					loop
 						track := f.start_time;
 						loop
@@ -1171,8 +1171,8 @@ begin
 					roomCapacity := r.seating_capacity;
 					day := d;
 					for f in 
-					(with tempTable as (select * from Conducts as C1 where C1.rid = roomId)
-					select start_time, end_time from Sessions where course_id in (select course_id from tempTable) and launch_date in (select launch_date from tempTable) and sid in (select sid from tempTable) and date = d order by start_time) 
+					(with tempTable as (select C1.course_id, C1.launch_date, C1.sid from Conducts as C1 where C1.rid = roomId)
+					select start_time, end_time from Sessions where (course_id, launch_date, sid) in (select * from tempTable) and date = d order by start_time) 
 					loop
 						track := f.start_time;
 						loop
@@ -1191,7 +1191,8 @@ begin
 end;
 $$ language plpgsql;
 
---add_course_offering (10)
+--add_course_offering (10) 
+-- assumes current table contains all the instructor currently working (have not quit yet)
 create or replace function add_course_offering(courseOfferingId int, courseId int, courseFees int, launchDate date, regisDeadline date, targetNumOfRegis int, adminId int, sessDates date[], sessStartHours time[], roomIds int[]) 
 returns void as $$
 declare
@@ -1215,16 +1216,28 @@ declare
 	sessStartInt int;
 	boolInstructor int;
 	boolSession int;
+	sessId int;
+	minDate date;
+	maxDate date;
+	offeringCapacity int;
+    countCapacity int;
 begin
 	lenDates := array_length(sessDates, 1);
 	lenStartHours := array_length(sessStartHours, 1);
 	lenRoomIds := array_length(roomIds, 1);
+    offeringCapacity := 0;
+    for n in 1..lenRoomIds loop
+        select seating_capacity into countCapacity from Rooms where rid = roomIds[n];
+        offeringCapacity := offeringCapacity + countCapacity;
+    end loop;
 	if courseOfferingId <> courseId then
 		raise exception 'Course Offering Id and Course Id must be the same since Offerings table references from Course table';
 	elsif courseId = null or courseId not in (select course_id from Courses) then
 		raise exception 'There is no such course id';
 	elsif lenDates <> lenStartHours or lenDates <> lenRoomIds or lenStartHours <> lenRoomIds then
 		raise exception 'Arrays of session information must be of same length';
+	elsif offeringCapacity < targetNumOfRegis then
+		raise exception 'Number of Registrations is greater than Capacity of Course Offering';	
 	else
 		-- check for valid instructor, if valid update/insert offerings,sessions,conducts
 		select course_area into courseArea from Courses where course_id = courseId;
@@ -1234,8 +1247,12 @@ begin
 		if lenInstructors = 0 then
 			raise exception 'No instructor for this course';
 		end if;
+		select min(d) into minDate from unnest(sessDates) as d;
+		select max(d) into maxDate from unnest(sessDates) as d;
+		insert into Offerings (course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) 
+		values (courseId, launchDate, courseFees, targetNumOfRegis, regisDeadline, minDate, maxDate, adminId, offeringCapacity);
+		sessId := 1;
 		for i in 1..lenDates loop
-			boolSession := 1; ----- ??
 			sessDate := sessDates[i];
 			sessStartHour := sessStartHours[i];
 			roomId := roomIds[i];
@@ -1270,26 +1287,22 @@ begin
 					
 					else
 						boolInstructor := 0;
-						
+						exit when 1 = 1;
 					end if;
 				end loop;
-				continue when boolInstructor = 0; -- go to next instructor
-				--insert into Offerings (course_id, launch_date, ) values ();
--- 				insert into Sessions (course_id, launch_date, sid, start_time, end_time, date) values (courseId, launchDate, ?, sessStartHour, sessEndHour, sessDate);
--- 				insert into Conducts (course_id, launch_date, sid, rid, eid) values (courseId, launchDate, ?, roomId, instructorId);
+				if j = lenInstructors and boolInstructor = 0 then
+					raise exception 'No valid assignment of instructor to session';
+				end if;
+				if boolInstructor = 0 then -- check next instructor
+					continue when 1 = 1;
+				end if;
+				insert into Sessions (course_id, launch_date, sid, start_time, end_time, date) values (courseId, launchDate, sessId, sessStartHour, sessEndHour, sessDate);
+				insert into Conducts (course_id, launch_date, sid, rid, eid) values (courseId, launchDate, sessId, roomId, instructorId);
+				sessId := sessId + 1;
 				exit when 1 = 1;
-				
--- 				if boolFlag = 0 then -- not available
-					
--- 				else -- boolFlag = 1
-				
--- 				end if;
-				--continue when -- if instructor is already teaching at that particular time and particular date
-				--continue when -- time is immeidately after the instrcutor session at that particular date
 			end loop; -- next instructor
 			
 		end loop; -- next session
-	
 	
 	end if;
 end;
