@@ -170,7 +170,7 @@ create table Offerings (
 
 create table Rooms (
     rid                 integer primary key,
-    location            text,
+    location            text not null,
     seating_capacity    integer not null
 );
 
@@ -203,7 +203,7 @@ create table Cancels (
     sid                 integer,
     cust_id             integer,
     date                date,
-    refund_amt          numeric,
+    refund_amt          numeric not null,
     package_credit      boolean not null,
     primary key (course_id, launch_date, sid, cust_id, date),
     foreign key (cust_id) references Customers (cust_id),

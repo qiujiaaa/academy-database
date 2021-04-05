@@ -1,24 +1,4 @@
---populate Customers table
-insert into Customers (phone, address, cust_id, name, email) values ('7095098098', '65 Fairview Parkway', 1, 'Jaymie', null);
-insert into Customers (phone, address, cust_id, name, email) values ('7198884633', '92 Briar Crest Court', 2, 'Dallas', 'dbeatens1@imageshack.us');
-insert into Customers (phone, address, cust_id, name, email) values ('6612840580', '17 Pepper Wood Junction', 3, 'Anna-maria', 'abarford2@bloglines.com');
-insert into Customers (phone, address, cust_id, name, email) values ('2035245598', '373 Anzinger Place', 4, 'Noland', 'namphlett3@wordpress.org');
-insert into Customers (phone, address, cust_id, name, email) values (null, '07356 Banding Lane', 5, 'Marie-ann', 'mstange4@noaa.gov');
-insert into Customers (phone, address, cust_id, name, email) values ('9994711549', '886 Farragut Crossing', 6, 'Putnam', 'pfowley5@mayoclinic.com');
-insert into Customers (phone, address, cust_id, name, email) values ('8106375428', '2051 Clove Place', 7, 'Merrielle', 'mpau6@rambler.ru');
-insert into Customers (phone, address, cust_id, name, email) values ('2268117881', '271 Clove Crossing', 8, 'Etty', 'egrosvener7@tumblr.com');
-insert into Customers (phone, address, cust_id, name, email) values (null, '4 Canary Hill', 9, 'Idell', 'ileith8@hexun.com');
-insert into Customers (phone, address, cust_id, name, email) values ('1965627597', '03 Montana Circle', 10, 'Keelia', 'kweiner9@mysql.com');
-insert into Customers (phone, address, cust_id, name, email) values ('9863884211', '313 Gulseth Street', 11, 'Willa', 'wgrinyakina@meetup.com');
-insert into Customers (phone, address, cust_id, name, email) values ('7977072151', '0214 Bobwhite Trail', 12, 'Chad', 'cmccroryb@ask.com');
-insert into Customers (phone, address, cust_id, name, email) values (null, '03312 Transport Road', 13, 'Duane', 'dbrainsbyc@wikimedia.org');
-insert into Customers (phone, address, cust_id, name, email) values ('6253313513', '04 Pearson Trail', 14, 'Alica', 'acrouchd@wix.com');
-insert into Customers (phone, address, cust_id, name, email) values ('1812040319', '55 Maple Wood Center', 15, 'Franky', 'fmartinote@acquirethisname.com');
-insert into Customers (phone, address, cust_id, name, email) values ('7322168950', '310 Tennyson Plaza', 16, 'Hewe', 'hspelmanf@xinhuanet.com');
-insert into Customers (phone, address, cust_id, name, email) values ('6369470528', '4 Stang Drive', 17, 'Willow', null);
-insert into Customers (phone, address, cust_id, name, email) values ('7355498293', '905 Rowland Point', 18, 'Myron', 'mverrierh@hostgator.com');
-insert into Customers (phone, address, cust_id, name, email) values ('2256194455', '9 Ludington Circle', 19, 'Elset', 'esoani@prlog.org');
-insert into Customers (phone, address, cust_id, name, email) values ('3674501285', '1 Grasskamp Junction', 20, 'Kit', 'kreekj@reverbnation.com');
+
 
 --populate Course_packages table
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (5, 'Artificial Intelligence', '2024-01-10', 4, 1, '2020-08-26');
@@ -44,6 +24,30 @@ insert into Course_packages (price, name, sale_end_date, num_free_registrations,
 
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (100, 'Computer Security', '2023-08-19', 2, 21, '2018-06-04');
 insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (150, 'Discrete Structures', '2023-08-19', 2, 22, '2018-06-04');
+
+
+BEGIN TRANSACTION;
+--populate Customers table
+insert into Customers (phone, address, cust_id, name, email) values ('7095098098', '65 Fairview Parkway', 1, 'Jaymie', null);
+insert into Customers (phone, address, cust_id, name, email) values ('7198884633', '92 Briar Crest Court', 2, 'Dallas', 'dbeatens1@imageshack.us');
+insert into Customers (phone, address, cust_id, name, email) values ('6612840580', '17 Pepper Wood Junction', 3, 'Anna-maria', 'abarford2@bloglines.com');
+insert into Customers (phone, address, cust_id, name, email) values ('2035245598', '373 Anzinger Place', 4, 'Noland', 'namphlett3@wordpress.org');
+insert into Customers (phone, address, cust_id, name, email) values (null, '07356 Banding Lane', 5, 'Marie-ann', 'mstange4@noaa.gov');
+insert into Customers (phone, address, cust_id, name, email) values ('9994711549', '886 Farragut Crossing', 6, 'Putnam', 'pfowley5@mayoclinic.com');
+insert into Customers (phone, address, cust_id, name, email) values ('8106375428', '2051 Clove Place', 7, 'Merrielle', 'mpau6@rambler.ru');
+insert into Customers (phone, address, cust_id, name, email) values ('2268117881', '271 Clove Crossing', 8, 'Etty', 'egrosvener7@tumblr.com');
+insert into Customers (phone, address, cust_id, name, email) values (null, '4 Canary Hill', 9, 'Idell', 'ileith8@hexun.com');
+insert into Customers (phone, address, cust_id, name, email) values ('1965627597', '03 Montana Circle', 10, 'Keelia', 'kweiner9@mysql.com');
+insert into Customers (phone, address, cust_id, name, email) values ('9863884211', '313 Gulseth Street', 11, 'Willa', 'wgrinyakina@meetup.com');
+insert into Customers (phone, address, cust_id, name, email) values ('7977072151', '0214 Bobwhite Trail', 12, 'Chad', 'cmccroryb@ask.com');
+insert into Customers (phone, address, cust_id, name, email) values (null, '03312 Transport Road', 13, 'Duane', 'dbrainsbyc@wikimedia.org');
+insert into Customers (phone, address, cust_id, name, email) values ('6253313513', '04 Pearson Trail', 14, 'Alica', 'acrouchd@wix.com');
+insert into Customers (phone, address, cust_id, name, email) values ('1812040319', '55 Maple Wood Center', 15, 'Franky', 'fmartinote@acquirethisname.com');
+insert into Customers (phone, address, cust_id, name, email) values ('7322168950', '310 Tennyson Plaza', 16, 'Hewe', 'hspelmanf@xinhuanet.com');
+insert into Customers (phone, address, cust_id, name, email) values ('6369470528', '4 Stang Drive', 17, 'Willow', null);
+insert into Customers (phone, address, cust_id, name, email) values ('7355498293', '905 Rowland Point', 18, 'Myron', 'mverrierh@hostgator.com');
+insert into Customers (phone, address, cust_id, name, email) values ('2256194455', '9 Ludington Circle', 19, 'Elset', 'esoani@prlog.org');
+insert into Customers (phone, address, cust_id, name, email) values ('3674501285', '1 Grasskamp Junction', 20, 'Kit', 'kreekj@reverbnation.com');
 
 --populate Credit_cards table
 insert into Credit_cards (expiry_date, number, CVV) values ('2022-08-10', '4175003665378449', '946');
@@ -90,6 +94,7 @@ insert into Owns (from_date, number, cust_id) values ('2018-12-01', '50186810200
 insert into Owns (from_date, number, cust_id) values ('2018-03-21', '3542502207619705', 19);
 insert into Owns (from_date, number, cust_id) values ('2018-08-13', '201880497763070', 20);
 insert into Owns (from_date, number, cust_id) values ('2018-10-13', '211880497763070', 20); -- multiple credit card owned by 1 person: id 20
+COMMIT;
 
 --populate Buys table
 insert into Buys (date, num_remaining_redemptions, package_id, number) values ('2021-05-24', 1, 1, '4175003665378449');
