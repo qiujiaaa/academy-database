@@ -1226,7 +1226,13 @@ begin
 	lenStartHours := array_length(sessStartHours, 1);
 	lenRoomIds := array_length(roomIds, 1);
     offeringCapacity := 0;
+    if adminId not in (select eid from Administrators) then
+        raise exception 'Admin Id does not exist';
+    end if;
     for n in 1..lenRoomIds loop
+        if roomIds[n] not in (select rid from Rooms) then
+            raise exception 'Room id does not exist';
+        end if; 
         select seating_capacity into countCapacity from Rooms where rid = roomIds[n];
         offeringCapacity := offeringCapacity + countCapacity;
     end loop;
