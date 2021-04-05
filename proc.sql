@@ -1837,6 +1837,8 @@ DECLARE
     room_seat_cap INTEGER;
     seat_cap INTEGER;
     new_cap INTEGER;
+    earliest DATE;
+    latest DATE;
 BEGIN
     IF cid IS NULL THEN
         RAISE EXCEPTION 'Course identifier should not be null';
@@ -1871,7 +1873,9 @@ BEGIN
                 DELETE FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 
                 new_cap := seat_cap - room_seat_cap;
-                UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
+                SELECT MIN(date) FROM Sessions WHERE course_id = cid AND l_date = launch_date INTO earliest;
+                SELECT MAX(date) FROM Sessions WHERE course_id = cid AND l_date = launch_date INTO latest;
+                UPDATE Offerings SET seating_capacity = new_cap, start_date = earliest, end_date = latest WHERE course_id = cid AND l_date = launch_date;
             END IF;
         END IF;
     END IF;
