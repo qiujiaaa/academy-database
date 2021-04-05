@@ -288,18 +288,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.cust_id = old.cust_id;
-	if numOfTuple <= 1 then 
-		--terminate
-		raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
-		return null;
-	else
-		--proceed
-		if (tg_op = 'UPDATE') then
-			return new;
-		elseif (tg_op = 'DELETE') then
-			return old;
-		end if;
-	end if;
+	-- if numOfTuple <= 1 then 
+	-- 	--terminate
+	-- 	raise notice 'Only has at most 1 record, deleting/updating it violates total participation constraint'; -- is this necessary for update? current issue: if only has 1 record cannot update
+	-- 	return null;
+	-- else
+	-- 	--proceed
+	-- 	if (tg_op = 'UPDATE') then
+	-- 		return new;
+	-- 	elseif (tg_op = 'DELETE') then
+	-- 		return old;
+	-- 	end if;
+	-- end if;
+    if (tg_op = 'DELETE') THEN
+        if numOfTuple <= 1 THEN
+            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+            return null;
+        ELSE
+            return old;
+        end if;
+    elseif (tg_op = 'UPDATE') THEN
+        return new;
+    end if;
 end;
 $$ language plpgsql;
 
@@ -338,18 +348,28 @@ declare
 	numOfTuple int;
 begin
 	select count(*) into numOfTuple from Owns where Owns.number = old.number;
-	if numOfTuple <= 1 then 
-		--terminate
-		raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
-		return null;
-	else
-		--proceed
-		if (tg_op = 'UPDATE') then
-			return new;
-		elseif (tg_op = 'DELETE') then
-			return old;
-		end if;
-	end if;
+	-- if numOfTuple <= 1 then 
+	-- 	--terminate
+	-- 	raise notice 'Only has 1 record, deleting/updating it violates total participation constraint';
+	-- 	return null;
+	-- else
+	-- 	--proceed
+	-- 	if (tg_op = 'UPDATE') then
+	-- 		return new;
+	-- 	elseif (tg_op = 'DELETE') then
+	-- 		return old;
+	-- 	end if;
+	-- end if;
+    if (tg_op = 'DELETE') THEN
+        if numOfTuple <= 1 THEN
+            raise notice 'Only has 1 record cannot delete as it violates total participation constraint';
+            return null;
+        ELSE
+            return old;
+        end if;
+    elseif (tg_op = 'UPDATE') THEN
+        return new;
+    end if;
 end;
 $$ language plpgsql;
 
@@ -918,18 +938,17 @@ $$ language plpgsql;
 
 --update_credit_card (4)
 --update_credit_card (update Owns as well)
--- TODO: clarify which card to update, for now its the latest date
+-- TODO: clarify which card to update, for now its the latest from_date
 create or replace function update_credit_card(cid int, ccNumber text, ccExpiryDate date, newCVV text)
 returns void as $$
 declare
     ccNumToBeUpdated text;
     latestDate date;
 begin
-    select max(from_date::date) into latestDate from Owns where cust_id = cid;
-    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date::date = latestDate::date;
-    update Credit_cards set expiry_date::date = ccExpiryDate::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
-    --TODO: update Owns as well?
-    update Owns set from_date::date = current_date::date, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    select max(from_date) into latestDate from Owns where cust_id = cid;
+    select number into ccNumToBeUpdated from Owns where cust_id = cid and from_date = latestDate;
+    update Credit_cards set expiry_date = ccExpiryDate, number = ccNumber, CVV = newCVV where number = ccNumToBeUpdated;
+    update Owns set from_date = current_date where number = ccNumber and cust_id = cid;
 end;
 $$ language plpgsql;
 
@@ -1089,11 +1108,205 @@ END;
 $$ LANGUAGE plpgsql;
 
 --get_available_rooms (9)
+create or replace function get_available_rooms(startDate date, endDate date) 
+returns table(roomId int, roomCapacity int, day date, hours time[]) as $$
+declare	
+	numSessions int;
+	curs cursor for (select * from Rooms order by rid);
+	r record;
+	f record;
+	track time;
+	d date;
+begin
+	if startDate > endDate then
+		raise exception 'Start date cannot be later than end date';
+	else
+		hours := array['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+		if startDate = endDate then
+			select count(*) into numSessions from Sessions where date = startDate;
+			if numSessions = 0 then -- all rooms available for all timings
+				open curs;
+				loop
+					fetch curs into r;
+					exit when not found;
+					roomId := r.rid;
+					roomCapacity := r.seating_capacity;
+					day := startDate;
+					return next;
+				end loop;
+				close curs;
+			else
+				open curs;
+				loop
+					fetch curs into r;
+					exit when not found;
+					hours := array['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+					roomId := r.rid;
+					roomCapacity := r.seating_capacity;
+					day := startDate;
+					for f in 
+					(with tempTable as (select C1.course_id, C1.launch_date, C1.sid from Conducts as C1 where C1.rid = roomId)
+					select start_time, end_time from Sessions where (course_id, launch_date, sid) in (select * from tempTable) and date = startDate order by start_time) 
+					loop
+						track := f.start_time;
+						loop
+							exit when track = f.end_time;
+							hours := array_remove(hours, track);
+							track := track + '1 hour'::interval;
+						end loop;
+					end loop;
+					return next;
+				end loop;
+				close curs;
+			end if;
+		else 
+		-- diff day
+		for d in select (generate_series(startDate, endDate, '1 day'::interval))::date loop
+			open curs;
+				loop
+					fetch curs into r;
+					exit when not found;
+					hours := array['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+					roomId := r.rid;
+					roomCapacity := r.seating_capacity;
+					day := d;
+					for f in 
+					(with tempTable as (select C1.course_id, C1.launch_date, C1.sid from Conducts as C1 where C1.rid = roomId)
+					select start_time, end_time from Sessions where (course_id, launch_date, sid) in (select * from tempTable) and date = d order by start_time) 
+					loop
+						track := f.start_time;
+						loop
+							exit when track = f.end_time;
+							hours := array_remove(hours, track);
+							track := track + '1 hour'::interval;
+						end loop;
+					end loop;
+					return next;
+				end loop;
+				close curs;
+		end loop;
+			
+		end if;
+	end if;
+end;
+$$ language plpgsql;
 
-
-
-
---add_course_offering (10)
+--add_course_offering (10) 
+-- assumes current table contains all the instructor currently working (have not quit yet)
+create or replace function add_course_offering(courseOfferingId int, courseId int, courseFees int, launchDate date, regisDeadline date, targetNumOfRegis int, adminId int, sessDates date[], sessStartHours time[], roomIds int[]) 
+returns void as $$
+declare
+	lenDates int;
+	lenStartHours int;
+	lenRoomIds int;
+	sessDate date;
+	sessStartHour time;
+	roomId int;
+	courseArea text;
+	instructorIds int[];
+	lenInstructors int;
+	instructorId int;
+	teachingHours int;
+	sessDuration int;
+	r record;
+	hours int[];
+	track int;
+	sessEndInt int;
+	sessEndHour time;
+	sessStartInt int;
+	boolInstructor int;
+	boolSession int;
+	sessId int;
+	minDate date;
+	maxDate date;
+	offeringCapacity int;
+    countCapacity int;
+begin
+	lenDates := array_length(sessDates, 1);
+	lenStartHours := array_length(sessStartHours, 1);
+	lenRoomIds := array_length(roomIds, 1);
+    offeringCapacity := 0;
+    for n in 1..lenRoomIds loop
+        select seating_capacity into countCapacity from Rooms where rid = roomIds[n];
+        offeringCapacity := offeringCapacity + countCapacity;
+    end loop;
+	if courseOfferingId <> courseId then
+		raise exception 'Course Offering Id and Course Id must be the same since Offerings table references from Course table';
+	elsif courseId = null or courseId not in (select course_id from Courses) then
+		raise exception 'There is no such course id';
+	elsif lenDates <> lenStartHours or lenDates <> lenRoomIds or lenStartHours <> lenRoomIds then
+		raise exception 'Arrays of session information must be of same length';
+	elsif offeringCapacity < targetNumOfRegis then
+		raise exception 'Number of Registrations is greater than Capacity of Course Offering';	
+	else
+		-- check for valid instructor, if valid update/insert offerings,sessions,conducts
+		select course_area into courseArea from Courses where course_id = courseId;
+		select duration into sessDuration from Courses where course_id = courseId;
+		instructorIds := array(select eid from Specializes where course_area = courseArea);
+		lenInstructors := array_length(instructorIds, 1);
+		if lenInstructors = 0 then
+			raise exception 'No instructor for this course';
+		end if;
+		select min(d) into minDate from unnest(sessDates) as d;
+		select max(d) into maxDate from unnest(sessDates) as d;
+		insert into Offerings (course_id, launch_date, fees, target_number_registrations, registration_deadline, start_date, end_date, eid, seating_capacity) 
+		values (courseId, launchDate, courseFees, targetNumOfRegis, regisDeadline, minDate, maxDate, adminId, offeringCapacity);
+		sessId := 1;
+		for i in 1..lenDates loop
+			sessDate := sessDates[i];
+			sessStartHour := sessStartHours[i];
+			roomId := roomIds[i];
+			for j in 1..lenInstructors loop
+				hours := array[9,10,11,14,15,16,17];
+				instructorId := instructorIds[j];
+				if instructorId in (select eid from Part_time_instructors) then -- part time instructor
+					with table1 as (select course_id, launch_date, sid from Conducts where eid = instructorId)
+            		select extract(hour from sum(end_time - start_time))::integer into teachingHours from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table1) and 
+            		extract(year from current_date)::integer = extract(year from date)::integer and
+            		extract(month from current_date)::integer = extract(month from date)::integer;
+					continue when teachingHours > 30; -- go to next instructor
+				end if;
+				for r in -- table of sessions the instructor is teaching
+				(with table2 as (select course_id, launch_date, sid from Conducts where eid = instructorId)
+				select start_time, end_time from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table2) and date = sessDate) 
+				loop
+					track := f.start_time::int;
+					loop
+					exit when track > f.end_time::int;
+					hours := array_remove(hours, track);
+					track := track + 1;
+					end loop;
+				end loop;
+				sessStartInt := extract(hour from sessStartHour)::integer;
+				sessEndInt := sessStartInt + sessDuration;
+				sessEndHour := sessStartHour + interval '1h' * sessDuration;
+				-- check sessStartInt up till sessEndInt-1 in hours Array, if in assign and continue to next sess, if not in continue to next instructor 
+				boolInstructor := 1;
+				for x in sessStartInt..(sessEndInt-1) loop
+					if x = any(hours) then
+					
+					else
+						boolInstructor := 0;
+						exit when 1 = 1;
+					end if;
+				end loop;
+				if j = lenInstructors and boolInstructor = 0 then
+					raise exception 'No valid assignment of instructor to session';
+				end if;
+				if boolInstructor = 0 then -- check next instructor
+					continue when 1 = 1;
+				end if;
+				insert into Sessions (course_id, launch_date, sid, start_time, end_time, date) values (courseId, launchDate, sessId, sessStartHour, sessEndHour, sessDate);
+				insert into Conducts (course_id, launch_date, sid, rid, eid) values (courseId, launchDate, sessId, roomId, instructorId);
+				sessId := sessId + 1;
+				exit when 1 = 1;
+			end loop; -- next instructor
+			
+		end loop; -- next session
+	
+	end if;
+end;
+$$ language plpgsql;
 
 --add_course_package (11)
 -- if not valid raise exception i.e name = (''/null), numFreeSessions = (negative/null), startDate > endDate, startDate = null, endDate = null, price = (negative/null) 
@@ -1799,6 +2012,79 @@ END
 $$ LANGUAGE plpgsql;
 
 --pay_salary (25)
+create or replace function pay_salary() -- PT (numWorkDays & monthly salary null), FT (numWorkHours & hourly rate null) 
+returns table(empId int, empName text, empStatus text, numWorkDays int, numWorkHours int, rate int, monthlySalary int, amountPaid int) as $$
+declare
+	curs cursor for (select * from Employees order by eid);
+	r record;
+	joinDate date;
+	departDate date;
+	firstWorkDay int;
+	lastWorkDay int;
+	paymentMonth int;
+	paymentYear int;
+	joinMonth int;
+	joinYear int;
+	departMonth int;
+	departYear int;
+	numDaysInMonth int;
+begin
+	open curs;
+    loop
+		fetch curs into r;
+		exit when not found;
+		empId := r.eid;
+		empName := r.name;
+		if r.eid in (select eid from Full_time_Emp) then -- hourlyrate and workhours null 
+			empStatus := 'full-time';
+			select join_date into joinDate from Employees where eid = r.eid;
+			select extract(month from current_date)::integer into paymentMonth;
+			select extract(year from current_date)::integer into paymentYear;
+			select extract(month from joinDate)::integer into joinMonth;
+			select extract(month from joinDate)::integer into joinYear;
+			if joinMonth = paymentMonth and joinYear = paymentYear then -- first day of work = day of joined date
+				select extract(day from joinDate)::integer into firstWorkDay;
+			else -- first day of work = 1
+				firstWorkDay := 1;
+			end if;
+			SELECT DATE_PART('days', DATE_TRUNC('month', current_date) + '1 MONTH'::INTERVAL - '1 DAY'::INTERVAL)::integer into numDaysInMonth;
+			select depart_date into departDate from Employees where eid = r.eid; 
+			select extract(month from departDate)::integer into departMonth;
+			select extract(year from departDate)::integer into departYear;
+			if departMonth = paymentMonth and departYear = paymentYear then
+				select extract(day from departDate)::integer into lastWorkDay;
+			else
+                lastWorkDay := numDaysInMonth;
+			end if;
+			numWorkDays := lastWorkDay - firstWorkDay + 1;
+			numWorkHours := null;
+			rate := null;
+			select monthly_salary into monthlySalary from Full_time_Emp where eid = r.eid;
+			amountPaid := monthlySalary * (numWorkDays / numDaysInMonth);
+			insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (empId, current_date, amountPaid, numWorkHours, numWorkDays);
+			return next;
+		else -- part time instructor, monthly salary and numWorkDays null
+			empStatus := 'part-time';
+			numWorkDays := null;
+			with table1 as (select course_id, launch_date, sid from Conducts where eid = r.eid)
+            select extract(hour from sum(end_time - start_time))::integer into numWorkHours from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table1) and 
+            extract(year from current_date)::integer = extract(year from date)::integer and
+            extract(month from current_date)::integer = extract(month from date)::integer;
+			select hourly_rate into rate from Part_time_Emp where eid = r.eid;
+			if numWorkHours is null then
+				numWorkHours := 0;
+				amountPaid := 0;
+			else
+				amountPaid := rate * numWorkHours;
+			end if;
+			monthlySalary := null;
+			insert into Pay_slips (eid, payment_date, amount, num_work_hours, num_work_days) values (empId, current_date, amountPaid, numWorkHours, null);
+			return next;
+		end if;
+	end loop;
+	close curs;
+end;
+$$ language plpgsql;
 
 --promote_courses (26)
 CREATE OR REPLACE FUNCTION
