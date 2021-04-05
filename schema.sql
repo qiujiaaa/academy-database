@@ -30,7 +30,7 @@ create table Credit_cards (
 );
 
 create table Owns (
-    from_date date, 
+    from_date date not null, 
     number text,
     cust_id integer not null,
     primary key (number),

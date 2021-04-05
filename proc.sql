@@ -961,6 +961,11 @@ declare
     -- ccNumToBeUpdated text;
     -- latestDate date;
 begin
+    IF cid IS NULL THEN 
+        RAISE EXCEPTION 'Customer id cannot be null';
+    ELSIF ccNumber IS NULL OR ccExpiryDate IS NULL OR newCVV IS NULL THEN 
+        RAISE EXCEPTION 'Credit card details cannot be null';
+    END IF;
     insert into Credit_cards (expiry_date, number, CVV) values (ccExpiryDate, ccNumber, newCVV);
     insert into Owns (from_date, number, cust_id) values (current_date, ccNumber, cid);
     -- select max(from_date) into latestDate from Owns where cust_id = cid;
@@ -1613,7 +1618,7 @@ BEGIN
         RAISE EXCEPTION 'Course ID cannot be null';
     ELSIF cdate IS NULL THEN
         RAISE EXCEPTION 'Course offering launch date cannot be null';
-    ELSIF session IS NULL THEN
+    ELSIF new_session IS NULL THEN
         RAISE EXCEPTION 'Session number cannot be null';
     END IF;
     SELECT count(*) INTO temp FROM Offerings WHERE course_id = cid AND launch_date = cdate;
