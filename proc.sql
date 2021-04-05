@@ -1073,13 +1073,13 @@ BEGIN
                 EXIT WHEN c_time + interval '1 hour' * lesson_duration > '18:00'::time;
                 SELECT count(*) INTO temp FROM Conducts NATURAL JOIN Sessions
                 WHERE eid = r.eid AND date = c_date AND c_time >= start_time - interval '1 hour' AND c_time < end_time + interval '1 hour';
-                IF temp = 0 THEN -- this timing has no clashes
+                IF temp = 0 AND NOT((c_time, c_time + interval '1 hour' * lesson_duration) OVERLAPS (time '12:00', time '14:00')) THEN 
+                    -- this timing has no clashes & does not overlap with lunch time
                     hour_array := array_append(hour_array, c_time);
                 END IF;
                 c_time := c_time + interval '1 hour';
             END LOOP;
             IF array_length(hour_array, 1) > 0 THEN -- there are possible timings on this date 
-            
                 employee_id := r.eid;
                 name := (SELECT Employees.name FROM Employees WHERE eid = r.eid);
                 working_hours := hours_this_month;
