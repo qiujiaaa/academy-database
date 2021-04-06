@@ -443,34 +443,12 @@ AFTER INSERT OR UPDATE ON Sessions
 DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION total_ppt_session_on_conduct();
 
---One session is conducted at most once
-CREATE OR REPLACE FUNCTION conducts_one_session()
-RETURNS TRIGGER AS $$
-DECLARE
-    count INT;
-BEGIN
-    SELECT count(*) INTO count
-    FROM Conducts C
-    WHERE C.course_id = NEW.course_id AND C.launch_date = NEW.launch_date AND C.sid = NEW.sid;
-    IF count <> 0 THEN
-        RAISE NOTICE 'Session can only be conducted once!';
-        RETURN NULL;
-    ELSE
-        RETURN NEW;
-    END IF;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS conducts_one_session ON Conducts;
-CREATE TRIGGER conducts_one_session
-BEFORE INSERT OR UPDATE ON Conducts FOR EACH ROW
-EXECUTE FUNCTION conducts_one_session();
-
 --conducting room does not overlap with one another
 CREATE OR REPLACE FUNCTION conduct_room_check()
 RETURNS TRIGGER AS $$
 DECLARE
     count INT;
+    same_row_count INT;
 BEGIN
     WITH inserted_conduct_timing AS (
         SELECT S.date, S.start_time, S.end_time
@@ -484,7 +462,15 @@ BEGIN
     AND S.date = I.date
     AND ((S.start_time >= I.start_time AND I.end_time > S.start_time)
         OR (I.start_time >= S.start_time AND S.end_time > I.start_time));
-    IF count <> 0 THEN
+    
+    SELECT count(*) INTO same_row_count
+    FROM Conducts C
+    WHERE C.course_id = NEW.course_id
+    AND C.launch_date = NEW.launch_date
+    AND C.sid = NEW.sid
+    AND C.rid = NEW.rid;
+
+    IF count <> 0 AND same_row_count = 0 THEN
         RAISE NOTICE 'Room is used for other conducting session!';
         RETURN NULL;
     ELSE
@@ -867,7 +853,7 @@ DECLARE
     r RECORD;
     
 BEGIN
-    IF eid IS NULL THEN
+    IF id IS NULL THEN
         RAISE EXCEPTION 'Employee id should not be null';
     END IF;
     
@@ -1862,10 +1848,13 @@ DECLARE
     today DATE;
     sess_date DATE;
     regist_count INTEGER;
+    canc_count INTEGER;
     room_id INTEGER;
     room_seat_cap INTEGER;
     seat_cap INTEGER;
     new_cap INTEGER;
+    earliest DATE;
+    latest DATE;
 BEGIN
     IF cid IS NULL THEN
         RAISE EXCEPTION 'Course identifier should not be null';
@@ -1889,8 +1878,11 @@ BEGIN
             RAISE EXCEPTION 'Session has already launched, cannot remove session';
         ELSE
             SELECT COUNT(*) FROM Registers WHERE course_id = cid AND l_date = launch_date AND sid = sess_id into regist_count;
+            SELECT COUNT(*) FROM Cancels WHERE course_id = cid AND l_date = launch_date AND sid = sess_id into canc_count;
             IF regist_count > 0 THEN
                 RAISE EXCEPTION 'There is at least one registration for the session';
+            ELSIF canc_count > 0 THEN
+                RAISE EXCEPTION 'There is at least one cancellation for the session';
             ELSE
                 SELECT rid FROM Conducts WHERE course_id = cid AND l_date = launch_date AND sess_id = sid INTO room_id;
                 SELECT seating_capacity FROM Rooms WHERE rid = room_id INTO room_seat_cap;
@@ -1900,7 +1892,9 @@ BEGIN
                 DELETE FROM Sessions WHERE course_id = cid AND l_date = launch_date AND sess_id = sid;
                 
                 new_cap := seat_cap - room_seat_cap;
-                UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
+                SELECT MIN(date) FROM Sessions WHERE course_id = cid AND l_date = launch_date INTO earliest;
+                SELECT MAX(date) FROM Sessions WHERE course_id = cid AND l_date = launch_date INTO latest;
+                UPDATE Offerings SET seating_capacity = new_cap, start_date = earliest, end_date = latest WHERE course_id = cid AND l_date = launch_date;
             END IF;
         END IF;
     END IF;
@@ -2033,6 +2027,9 @@ BEGIN
                         IF offering_end < new_date THEN
                             UPDATE Offerings SET end_date = new_date, seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                         END IF;
+                        
+                        --update seat_cap
+                        UPDATE Offerings SET seating_capacity = new_cap WHERE course_id = cid AND l_date = launch_date;
                     END IF;
                 END IF;
             END IF;
