@@ -1203,7 +1203,7 @@ $$ language plpgsql;
 
 --add_course_offering (10) 
 -- assumes current table contains all the instructor currently working (have not quit yet)
-create or replace function add_course_offering(courseOfferingId int, courseId int, courseFees int, launchDate date, regisDeadline date, targetNumOfRegis int, adminId int, sessDates date[], sessStartHours time[], roomIds int[]) 
+create or replace function add_course_offering(courseOfferingId int, courseId int, courseFees numeric, launchDate date, regisDeadline date, targetNumOfRegis int, adminId int, sessDates date[], sessStartHours time[], roomIds int[]) 
 returns void as $$
 declare
 	lenDates int;
