@@ -1342,7 +1342,7 @@ begin
 	else
 		select count(*) into numPackages from Course_packages;
 		numPackages := numPackages + 1;
-		insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (price, packageName, startDate, numberOfFreeCourseSessions, numPackages, endDate);
+		insert into Course_packages (price, name, sale_end_date, num_free_registrations, package_id, sale_start_date) values (price, packageName, endDate, numberOfFreeCourseSessions, numPackages, startDate);
 	end if;
 end;
 $$ language plpgsql;
