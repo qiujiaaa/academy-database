@@ -456,7 +456,7 @@ insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) va
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (11, '2023-02-14', 1, '14:00', '18:00', '2023-04-20');
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (11, '2023-02-14', 2, '14:00', '18:00', '2023-06-30');
 insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (13, '2020-08-14', 1, '14:00', '18:00', '2020-10-20');
-insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (13, '2020-08-14', 2, '14:00', '18:00', '2021-03-30');
+insert into Sessions(course_id, launch_date, sid, start_time, end_time, date) values (13, '2020-08-14', 2, '14:00', '18:00', '2021-04-06');
 
 --populate Conducts
 
