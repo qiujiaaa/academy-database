@@ -1113,7 +1113,8 @@ BEGIN
     WHERE (C.course_id = S.course_id AND C.launch_date = S.launch_date AND C.sid = S.sid)
     AND session_date = S.date
     AND ((S.start_time >= start_hour AND end_hour > S.start_time)
-    OR (start_hour >= S.start_time AND S.end_time > start_hour));
+    OR (start_hour >= S.start_time AND S.end_time > start_hour))
+    ORDER BY rid ASC;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1429,10 +1430,17 @@ BEGIN
         AND (R.course_id = S.course_id AND R.launch_date = S.launch_date AND R.sid = S.sid)
         AND C.course_id = S.course_id
         ORDER BY S.date ASC, start_time ASC
+    ), redeemed_sessions AS (
+        SELECT row_to_json(t)
+        FROM (
+            SELECT * FROM R142
+        ) t
     )
-    SELECT row_to_json(
-        ROW(R1.name, R1.date, R1.num_free_registrations, R1.num_remaining_redemptions, ROW(R2.*))
-    ) FROM R141 R1, R142 R2;
+    SELECT row_to_json(t)
+    FROM (
+        SELECT R1.name, R1.date, R1.num_free_registrations, R1.num_remaining_redemptions, redeemed_sessions
+        FROM R141 R1, redeemed_sessions
+    ) t;
 END;
 $$ LANGUAGE plpgsql;
 
