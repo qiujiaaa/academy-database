@@ -1286,9 +1286,9 @@ begin
 				(with table2 as (select course_id, launch_date, sid from Conducts where eid = instructorId)
 				select start_time, end_time from Sessions as S where (S.course_id, S.launch_date, S.sid) in (select * from table2) and date = sessDate) 
 				loop
-					track := f.start_time::int;
+					track := r.start_time::int;
 					loop
-					exit when track > f.end_time::int;
+					exit when track > r.end_time::int;
 					hours := array_remove(hours, track);
 					track := track + 1;
 					end loop;
